@@ -160,7 +160,7 @@ public class CommandExecutor extends AbstractLogEnabled {
                 builder.setConnection(clientConfiguration.getController());
             }
             // Configure the authentication config url if defined
-            if (clientConfiguration.getAuthenticationConfigUri() != null) {
+            if (clientConfiguration != null && clientConfiguration.getAuthenticationConfigUri() != null) {
                 builder.addJavaOption("-Dwildfly.config.url=" + clientConfiguration.getAuthenticationConfigUri().toString());
             }
             // Workaround for WFCORE-4121

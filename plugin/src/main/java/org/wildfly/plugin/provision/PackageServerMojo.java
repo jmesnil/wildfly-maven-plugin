@@ -16,29 +16,36 @@
  */
 package org.wildfly.plugin.provision;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import javax.inject.Inject;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
+import org.apache.maven.project.MavenProject;
+import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.galleon.util.IoUtils;
+import org.wildfly.plugin.cli.CommandConfiguration;
+import org.wildfly.plugin.cli.CommandExecutor;
+import org.wildfly.plugin.common.MavenModelControllerClientConfiguration;
 import org.wildfly.plugin.common.PropertyNames;
-import org.wildfly.plugin.core.Deployment;
-import org.wildfly.plugin.core.GalleonConfigBuilder;
-import static org.wildfly.plugin.core.GalleonConfigBuilder.STANDALONE;
-import static org.wildfly.plugin.core.GalleonConfigBuilder.STANDALONE_XML;
+import org.wildfly.plugin.core.GalleonUtils;
+import static org.wildfly.plugin.core.GalleonUtils.STANDALONE;
+import static org.wildfly.plugin.core.GalleonUtils.STANDALONE_XML;
 import org.wildfly.plugin.deployment.PackageType;
 
-
 /**
- * Provision a server, copy extra content and deploy primary artifact if it exists
+ * Provision a server, copy extra content and deploy primary artifact if it
+ * exists
  *
  * @author jfdenise
  */
@@ -46,11 +53,24 @@ import org.wildfly.plugin.deployment.PackageType;
 public class PackageServerMojo extends AbstractProvisionServerMojo {
 
     /**
-     * A list of directories to copy content to the provisioned server.
-     * If a directory is not absolute, it has to be relative to the project base directory.
+     * A list of directories to copy content to the provisioned server. If a
+     * directory is not absolute, it has to be relative to the project base
+     * directory.
      */
     @Parameter(alias = "extra-server-content-dirs")
     List<String> extraServerContentDirs = Collections.emptyList();
+
+    /**
+     * The CLI commands to execute before the deployment is deployed.
+     */
+    @Parameter(property = PropertyNames.COMMANDS)
+    private List<String> commands = new ArrayList<>();
+
+    /**
+     * The CLI script files to execute before the deployment is deployed.
+     */
+    @Parameter(property = PropertyNames.SCRIPTS)
+    private List<File> scripts = new ArrayList<>();
 
     /**
      * The file name of the application to be deployed.
@@ -66,6 +86,13 @@ public class PackageServerMojo extends AbstractProvisionServerMojo {
     private String filename;
 
     /**
+     * The name of the server configuration to use when deploying the
+     * deployment. Defaults to 'standalone.xml'.
+     */
+    @Parameter(alias = "server-config", property = PropertyNames.SERVER_CONFIG, defaultValue = GalleonUtils.STANDALONE_XML)
+    private String serverConfig;
+
+    /**
      * Specifies the name used for the deployment.
      */
     @Parameter(property = PropertyNames.DEPLOYMENT_NAME)
@@ -74,37 +101,90 @@ public class PackageServerMojo extends AbstractProvisionServerMojo {
     /**
      * The runtime name for the deployment.
      * <p>
-     * In some cases users may wish to have two deployments with the same {@code runtime-name} (e.g. two versions of
-     * {@code example.war}) both available in the management configuration, in which case the deployments would need to
-     * have distinct {@code name} values but would have the same {@code runtime-name}.
+     * In some cases users may wish to have two deployments with the same
+     * {@code runtime-name} (e.g. two versions of {@code example.war}) both
+     * available in the management configuration, in which case the deployments
+     * would need to have distinct {@code name} values but would have the same
+     * {@code runtime-name}.
      * </p>
      */
     @Parameter(alias = "runtime-name", property = PropertyNames.DEPLOYMENT_RUNTIME_NAME)
     private String runtimeName;
 
+    /**
+     * Indicates how {@code stdout} and {@code stderr} should be handled for the
+     * spawned CLI process. Currently a new process is only spawned if
+     * {@code offline} is set to {@code true} or {@code fork} is set to
+     * {@code true}. Note that {@code stderr} will be redirected to
+     * {@code stdout} if the value is defined unless the value is {@code none}.
+     * <div>
+     * By default {@code stdout} and {@code stderr} are inherited from the
+     * current process. You can change the setting to one of the follow:
+     * <ul>
+     * <li>{@code none} indicates the {@code stdout} and {@code stderr} stream
+     * should not be consumed</li>
+     * <li>{@code System.out} or {@code System.err} to redirect to the current
+     * processes <em>(use this option if you see odd behavior from maven with
+     * the default value)</em></li>
+     * <li>Any other value is assumed to be the path to a file and the
+     * {@code stdout} and {@code stderr} will be written there</li>
+     * </ul>
+     * </div>
+     */
+    @Parameter(name = "stdout", defaultValue = "System.out", property = PropertyNames.STDOUT)
+    private String stdout;
+
+    @Inject
+    private CommandExecutor commandExecutor;
+
     @Override
     protected void serverProvisioned(Path jbossHome) throws MojoExecutionException, MojoFailureException {
         try {
-            copyExtraContent(jbossHome);
+            if (!extraServerContentDirs.isEmpty()) {
+                getLog().info("Copying extra content to server");
+                copyExtraContent(jbossHome);
+            }
         } catch (IOException ex) {
             throw new MojoExecutionException(ex.getLocalizedMessage(), ex);
         }
-        final Path deploymentContent = getDeploymentContent();
-        // The deployment must exist before we do anything
-        if (Files.notExists(deploymentContent)) {
-            throw new MojoExecutionException(String.format("The deployment '%s' could not be found.", deploymentContent.toAbsolutePath()));
+        // CLI execution
+        if (!commands.isEmpty() || !scripts.isEmpty()) {
+            getLog().info("Excuting CLI commands and scripts");
+            final CommandConfiguration cmdConfig = CommandConfiguration.of(this::createClient, this::getClientConfiguration)
+                    .addCommands(commands)
+                    .addScripts(scripts)
+                    .setJBossHome(jbossHome)
+                    .setFork(true)
+                    .setStdout(stdout)
+                    .setOffline(true);
+            commandExecutor.execute(cmdConfig);
         }
-        // Create the deployment and deploy
-        final Deployment deployment = Deployment.of(deploymentContent)
-                .setName(name)
-                .setRuntimeName(runtimeName);
-        // XXX TODO Must be able to deploy the artifact in offline mode.
+        final Path deploymentContent = getDeploymentContent();
+        if (Files.exists(deploymentContent)) {
+            getLog().info("Deploying " + deploymentContent);
+            List<String> deploymentCommands = new ArrayList<>();
+            deploymentCommands.add("embed-server --server-config=" + serverConfig);
+            deploymentCommands.add("deploy  " + deploymentContent + " --name=" + (name == null ? deploymentContent.getFileName() : name)
+                    + " --runtime-name=" + (runtimeName == null ? deploymentContent.getFileName() : runtimeName));
+            final CommandConfiguration cmdConfigDeployment = CommandConfiguration.of(this::createClient, this::getClientConfiguration)
+                    .addCommands(deploymentCommands)
+                    .setJBossHome(jbossHome)
+                    .setFork(true)
+                    .setStdout(stdout)
+                    .setOffline(true);
+            commandExecutor.execute(cmdConfigDeployment);
+        }
+        try {
+            cleanupServer(jbossHome);
+        } catch (IOException ex) {
+            throw new MojoExecutionException(ex.getLocalizedMessage(), ex);
+        }
     }
 
     public void copyExtraContent(Path target) throws MojoExecutionException, IOException {
         for (String path : extraServerContentDirs) {
             Path extraContent = Paths.get(path);
-            extraContent = GalleonConfigBuilder.resolvePath(project, extraContent);
+            extraContent = resolvePath(project, extraContent);
             if (Files.notExists(extraContent)) {
                 throw new MojoExecutionException("Extra content dir " + extraContent + " doesn't exist");
             }
@@ -115,7 +195,7 @@ public class PackageServerMojo extends AbstractProvisionServerMojo {
 
     }
 
-    private  void warnExtraConfig(Path extraContentDir) {
+    private void warnExtraConfig(Path extraContentDir) {
         Path config = extraContentDir.resolve(STANDALONE).resolve("configurations").resolve(STANDALONE_XML);
         if (Files.exists(config)) {
             getLog().warn("The file " + config + " overrides the Galleon generated configuration, "
@@ -134,4 +214,27 @@ public class PackageServerMojo extends AbstractProvisionServerMojo {
         return targetDir.toPath().resolve(filename);
     }
 
+    private static void cleanupServer(Path jbossHome) throws IOException {
+        Path history = jbossHome.resolve("standalone").resolve("configuration").resolve("standalone_xml_history");
+        IoUtils.recursiveDelete(history);
+        Path tmp = jbossHome.resolve("standalone").resolve("tmp");
+        IoUtils.recursiveDelete(tmp);
+        Path log = jbossHome.resolve("standalone").resolve("log");
+        IoUtils.recursiveDelete(log);
+    }
+
+    private MavenModelControllerClientConfiguration getClientConfiguration() {
+        return null;
+    }
+
+    private ModelControllerClient createClient() {
+        return null;
+    }
+
+    private static Path resolvePath(MavenProject project, Path path) {
+        if (!path.isAbsolute()) {
+            path = Paths.get(project.getBasedir().getAbsolutePath()).resolve(path);
+        }
+        return path;
+    }
 }

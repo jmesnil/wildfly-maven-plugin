@@ -38,6 +38,7 @@ import org.eclipse.aether.repository.RemoteRepository;
 import org.jboss.galleon.ProvisioningException;
 import org.jboss.galleon.ProvisioningManager;
 import org.jboss.galleon.config.ProvisioningConfig;
+import org.jboss.galleon.maven.plugin.util.Configuration;
 import org.jboss.galleon.maven.plugin.util.FeaturePack;
 import org.jboss.galleon.maven.plugin.util.MavenArtifactRepositoryManager;
 import org.jboss.galleon.maven.plugin.util.MvnMessageWriter;
@@ -46,8 +47,8 @@ import org.jboss.galleon.util.IoUtils;
 import org.jboss.galleon.xml.ProvisioningXmlWriter;
 import org.wildfly.plugin.common.PropertyNames;
 import org.wildfly.plugin.common.Utils;
-import org.wildfly.plugin.core.GalleonConfigBuilder;
-import static org.wildfly.plugin.core.GalleonConfigBuilder.PLUGIN_PROVISIONING_FILE;
+import org.wildfly.plugin.core.GalleonUtils;
+import static org.wildfly.plugin.core.GalleonUtils.PLUGIN_PROVISIONING_FILE;
 import org.wildfly.plugin.core.MavenRepositoriesEnricher;
 
 
@@ -105,32 +106,10 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
     boolean logTime;
 
     /**
-     * A list of Galleon layers to provision. Can be used when
-     * feature-pack-location or feature-packs are set.
-     */
-    @Parameter(alias = "layers", required = false)
-    List<String> layers = Collections.emptyList();
-
-    /**
-     * A list of Galleon layers to exclude. Can be used when
-     * feature-pack-location or feature-packs are set.
-     */
-    @Parameter(alias = "excluded-layers", required = false)
-    List<String> excludedLayers = Collections.emptyList();
-
-    /**
      * Whether to record provisioned state in .galleon directory.
      */
     @Parameter(alias = "record-state", defaultValue = "false")
     boolean recordState;
-
-    /**
-     * The WildFly Galleon feature-pack location to use if no provisioning.xml
-     * file found. Can't be used in conjunction with feature-packs.
-     */
-    @Parameter(alias = "feature-pack-location", required = false,
-            property = PropertyNames.WILDFLY_PROVISION_LOCATION)
-    String featurePackLocation;
 
     /**
      * Set to {@code true} if you want the goal to be skipped, otherwise
@@ -154,13 +133,10 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
     List<FeaturePack> featurePacks = Collections.emptyList();
 
     /**
-     * The path to the {@code provisioning.xml} file to use. Note that this cannot be used with the {@code feature-packs}
-     * or {@code layers} configuration parameters.
-     * If the provisioning file is not absolute, it has to be relative to the project base directory.
+     * A list of custom configurations to install.
      */
-    @Parameter(alias = "provisioning-file", property = PropertyNames.WILDFLY_PROVISION_PROVISIONING_FILE,
-            defaultValue = "${project.basedir}/galleon/provisioning.xml")
-    private File provisioningFile;
+    @Parameter(alias = "configurations", required = false)
+    private List<Configuration> configs = Collections.emptyList();
 
     /**
      * The target directory the application to be deployed is located.
@@ -203,10 +179,8 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
                 .setLogTime(logTime)
                 .setRecordState(recordState)
                 .build()) {
-
-            GalleonConfigBuilder builder = new GalleonConfigBuilder(project, getLog(), featurePacks, featurePackLocation,
-                    provisioningFile, layers, excludedLayers, pluginOptions);
-            ProvisioningConfig config = builder.buildGalleonConfig(pm).buildConfig();
+            getLog().info("Provisioning server");
+            ProvisioningConfig config = GalleonUtils.buildConfig(pm, featurePacks, configs, pluginOptions);
             pm.provision(config);
             if (!recordState) {
                 Path file = home.resolve(PLUGIN_PROVISIONING_FILE);
