@@ -52,6 +52,7 @@ public class GalleonConfigBuilder {
     public static final String MAVEN_REPO_PLUGIN_OPTION = "jboss-maven-repo";
     public static final String MAVEN_REPO_LOCAL = "maven.repo.local";
     public static final String PLUGIN_PROVISIONING_FILE = ".wildfly-maven-plugin-provisioning.xml";
+
     public interface GalleonConfig {
 
         ProvisioningConfig buildConfig() throws ProvisioningException;
@@ -372,7 +373,7 @@ public class GalleonConfigBuilder {
         return builder.toString();
     }
 
-    private static Path resolvePath(MavenProject project, Path path) {
+    public static Path resolvePath(MavenProject project, Path path) {
         if (!path.isAbsolute()) {
             path = Paths.get(project.getBasedir().getAbsolutePath()).resolve(path);
         }

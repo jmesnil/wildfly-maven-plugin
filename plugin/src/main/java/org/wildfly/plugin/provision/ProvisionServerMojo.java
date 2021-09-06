@@ -19,6 +19,7 @@ package org.wildfly.plugin.provision;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -52,6 +53,8 @@ import org.wildfly.plugin.common.PropertyNames;
 import org.wildfly.plugin.common.Utils;
 import org.wildfly.plugin.core.GalleonConfigBuilder;
 import static org.wildfly.plugin.core.GalleonConfigBuilder.PLUGIN_PROVISIONING_FILE;
+import static org.wildfly.plugin.core.GalleonConfigBuilder.STANDALONE;
+import static org.wildfly.plugin.core.GalleonConfigBuilder.STANDALONE_XML;
 import org.wildfly.plugin.core.MavenRepositoriesEnricher;
 
 
@@ -134,8 +137,15 @@ public class ProvisionServerMojo extends AbstractMojo {
      * file found. Can't be used in conjunction with feature-packs.
      */
     @Parameter(alias = "feature-pack-location", required = false,
-            property = "wildfly.server.fpl")
+            property = PropertyNames.WILDFLY_PROVISION_LOCATION)
     String featurePackLocation;
+
+    /**
+     * A list of directories to copy content to the provisioned server.
+     * If a directory is not absolute, it has to be relative to the project base directory.
+     */
+    @Parameter(alias = "extra-server-content-dirs")
+    List<String> extraServerContentDirs = Collections.emptyList();
 
     /**
      * Set to {@code true} if you want the goal to be skipped, otherwise
@@ -163,7 +173,8 @@ public class ProvisionServerMojo extends AbstractMojo {
      * or {@code layers} configuration parameters.
      * If the provisioning file is not absolute, it has to be relative to the project base directory.
      */
-    @Parameter(alias = "provisioning-file", property = "wildfly.server.provisioning.file", defaultValue = "${project.basedir}/galleon/provisioning.xml")
+    @Parameter(alias = "provisioning-file", property = PropertyNames.WILDFLY_PROVISION_PROVISIONING_FILE,
+            defaultValue = "${project.basedir}/galleon/provisioning.xml")
     private File provisioningFile;
 
     private Path wildflyDir;
@@ -185,6 +196,7 @@ public class ProvisionServerMojo extends AbstractMojo {
 
         try {
             provisionServer(wildflyDir);
+            copyExtraContent(wildflyDir);
         } catch (ProvisioningException | IOException | XMLStreamException ex) {
             throw new MojoExecutionException("Provisioning failed", ex);
         }
@@ -211,4 +223,27 @@ public class ProvisionServerMojo extends AbstractMojo {
             }
         }
     }
+
+    public void copyExtraContent(Path target) throws MojoExecutionException, IOException {
+        for (String path : extraServerContentDirs) {
+            Path extraContent = Paths.get(path);
+            extraContent = GalleonConfigBuilder.resolvePath(project, extraContent);
+            if (Files.notExists(extraContent)) {
+                throw new MojoExecutionException("Extra content dir " + extraContent + " doesn't exist");
+            }
+            // Check for the presence of a standalone.xml file
+            warnExtraConfig(extraContent);
+            IoUtils.copy(extraContent, target);
+        }
+
+    }
+
+    private  void warnExtraConfig(Path extraContentDir) {
+        Path config = extraContentDir.resolve(STANDALONE).resolve("configurations").resolve(STANDALONE_XML);
+        if (Files.exists(config)) {
+            getLog().warn("The file " + config + " overrides the Galleon generated configuration, "
+                    + "un-expected behavior can occur when starting the server");
+        }
+    }
+
 }

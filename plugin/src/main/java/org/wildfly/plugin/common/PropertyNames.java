@@ -65,6 +65,10 @@ public interface PropertyNames {
 
     String WILDFLY_PROVISION_DIRECTORY_NAME = "wildfly.provision.directory.name";
 
+    String WILDFLY_PROVISION_PROVISIONING_FILE = "wildfly.provision.provisioning.file";
+
+    String WILDFLY_PROVISION_EXTRA_CONTENT_DIRS = "wildfly.provision.provisioning.file";
+
     String WILDFLY_AUTH_CLIENT_CONFIG = "wildfly.authConfig";
 
     String JBOSS_HOME = "jboss-as.home"; // TODO (jrp) look at this one
