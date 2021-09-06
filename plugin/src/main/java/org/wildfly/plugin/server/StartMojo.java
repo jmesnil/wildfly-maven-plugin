@@ -24,36 +24,41 @@ package org.wildfly.plugin.server;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
-import javax.inject.Inject;
+import org.apache.maven.execution.MavenSession;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.logging.Log;
+import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
+import org.apache.maven.project.MavenProject;
+import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.as.controller.client.helpers.domain.DomainClient;
+import org.jboss.galleon.ProvisioningException;
+import org.jboss.galleon.maven.plugin.util.MavenArtifactRepositoryManager;
+import org.jboss.galleon.universe.maven.repo.MavenRepoManager;
 import org.wildfly.core.launcher.CommandBuilder;
 import org.wildfly.core.launcher.DomainCommandBuilder;
 import org.wildfly.core.launcher.Launcher;
 import org.wildfly.core.launcher.StandaloneCommandBuilder;
 import org.wildfly.plugin.common.AbstractServerConnection;
-import org.wildfly.plugin.common.Archives;
 import org.wildfly.plugin.common.Environment;
 import org.wildfly.plugin.common.PropertyNames;
 import org.wildfly.plugin.common.StandardOutput;
 import org.wildfly.plugin.common.Utils;
+import org.wildfly.plugin.core.GalleonUtils;
+import org.wildfly.plugin.core.MavenRepositoriesEnricher;
 import org.wildfly.plugin.core.ServerHelper;
-import org.wildfly.plugin.repository.ArtifactName;
-import org.wildfly.plugin.repository.ArtifactNameBuilder;
-import org.wildfly.plugin.repository.ArtifactResolver;
 
 /**
  * Starts a standalone instance of WildFly Application Server.
@@ -65,20 +70,25 @@ import org.wildfly.plugin.repository.ArtifactResolver;
 @Mojo(name = "start", requiresDependencyResolution = ResolutionScope.RUNTIME)
 public class StartMojo extends AbstractServerConnection {
 
+    @Component
+    RepositorySystem repoSystem;
+
     @Parameter(defaultValue = "${repositorySystemSession}", readonly = true, required = true)
     private RepositorySystemSession session;
 
     @Parameter(defaultValue = "${project.remoteProjectRepositories}", readonly = true, required = true)
     private List<RemoteRepository> repositories;
 
+    @Parameter(defaultValue = "${project}", readonly = true, required = true)
+    MavenProject project;
+
+    @Parameter(defaultValue = "${session}", readonly = true, required = true)
+    MavenSession mavenSession;
     /**
      * The target directory the application to be deployed is located.
      */
     @Parameter(defaultValue = "${project.build.directory}", readonly = true, required = true)
     private File targetDir;
-
-    @Inject
-    private ArtifactResolver artifactResolver;
 
     /**
      * The WildFly Application Server's home directory. If not used, WildFly will be downloaded.
@@ -87,44 +97,16 @@ public class StartMojo extends AbstractServerConnection {
     private String jbossHome;
 
     /**
-     * A string of the form groupId:artifactId:version[:packaging][:classifier]. Any missing portion of the artifact
-     * will be replaced with the it's appropriate default property value
+     * The feature-pack location of the default server to provision in case no server home has been set.
      */
-    @Parameter(property = PropertyNames.WILDFLY_ARTIFACT)
-    private String artifact;
+    @Parameter(property = PropertyNames.WILDFLY_PROVISION_LOCATION, defaultValue = Utils.WILDFLY_DEFAULT_FEATURE_PACK_LOCATION)
+    private String featurePackLocation;
 
     /**
-     * The {@code groupId} of the artifact to download. Ignored if {@link #artifact} {@code groupId} portion is used.
+     * The directory name inside the buildDir where to provision the server.
      */
-    @Parameter(defaultValue = ArtifactNameBuilder.WILDFLY_GROUP_ID, property = PropertyNames.WILDFLY_GROUP_ID)
-    private String groupId;
-
-    /**
-     * The {@code artifactId} of the artifact to download. Ignored if {@link #artifact} {@code artifactId} portion is
-     * used.
-     */
-    @Parameter(defaultValue = ArtifactNameBuilder.WILDFLY_ARTIFACT_ID, property = PropertyNames.WILDFLY_ARTIFACT_ID)
-    private String artifactId;
-
-    /**
-     * The {@code classifier} of the artifact to download. Ignored if {@link #artifact} {@code classifier} portion is
-     * used.
-     */
-    @Parameter(property = PropertyNames.WILDFLY_CLASSIFIER)
-    private String classifier;
-
-    /**
-     * The {@code packaging} of the artifact to download. Ignored if {@link #artifact} {@code packing} portion is used.
-     */
-    @Parameter(property = PropertyNames.WILDFLY_PACKAGING, defaultValue = ArtifactNameBuilder.WILDFLY_PACKAGING)
-    private String packaging;
-
-    /**
-     * The {@code version} of the artifact to download. Ignored if {@link #artifact} {@code version} portion is used.
-     * The default version is resolved if left blank.
-     */
-    @Parameter(property = PropertyNames.WILDFLY_VERSION)
-    private String version;
+    @Parameter(property = PropertyNames.WILDFLY_PROVISION_DIRECTORY_NAME, defaultValue = Utils.WILDFLY_DEFAULT_DIR)
+    private String provisionDirectoryName;
 
     /**
      * The modules path or paths to use. A single path can be used or multiple paths by enclosing them in a paths
@@ -226,6 +208,8 @@ public class StartMojo extends AbstractServerConnection {
     @Parameter(alias = "server-type", property = "wildfly.server.type", defaultValue = "STANDALONE")
     private ServerType serverType;
 
+    private MavenRepoManager mavenRepoManager;
+
     /**
      * Specifies the environment variables to be passed to the process being started.
      * <div>
@@ -246,8 +230,11 @@ public class StartMojo extends AbstractServerConnection {
             log.debug("Skipping server start");
             return;
         }
+        MavenRepositoriesEnricher.enrich(mavenSession, project, repositories);
+        mavenRepoManager = new MavenArtifactRepositoryManager(repoSystem, session, repositories);
+
         // Validate the environment
-        final Path jbossHome = extractIfRequired(targetDir.toPath());
+        final Path jbossHome = provisionIfRequired(targetDir.toPath().resolve(provisionDirectoryName));
         if (!ServerHelper.isValidHomeDirectory(jbossHome)) {
             throw new MojoExecutionException(String.format("JBOSS_HOME '%s' is not a valid directory.", jbossHome));
         }
@@ -395,23 +382,18 @@ public class StartMojo extends AbstractServerConnection {
         return commandBuilder;
     }
 
-    private Path extractIfRequired(final Path buildDir) throws MojoFailureException {
+    private Path provisionIfRequired(final Path installDir) throws MojoFailureException {
         if (jbossHome != null) {
             //we do not need to download WildFly
             return Paths.get(jbossHome);
         }
-        final ArtifactName artifact = ArtifactNameBuilder.forRuntime(this.artifact)
-                .setArtifactId(artifactId)
-                .setClassifier(classifier)
-                .setGroupId(groupId)
-                .setPackaging(packaging)
-                .setVersion(version)
-                .build();
-        final Path result = artifactResolver.resolve(session, repositories, artifact);
         try {
-            return Archives.uncompress(result, buildDir);
-        } catch (IOException e) {
-            throw new MojoFailureException("Artifact was not successfully extracted: " + result, e);
+            if (!Files.exists(installDir)) {
+                GalleonUtils.provision(installDir, featurePackLocation, mavenRepoManager);
+            }
+            return installDir;
+        } catch (ProvisioningException ex) {
+            throw new MojoFailureException(ex.getLocalizedMessage(), ex);
         }
     }
 

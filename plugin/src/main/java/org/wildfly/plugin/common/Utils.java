@@ -33,6 +33,8 @@ import java.util.regex.Pattern;
 public class Utils {
     private static final Pattern EMPTY_STRING = Pattern.compile("^$|\\s+");
 
+    public static final String WILDFLY_DEFAULT_FEATURE_PACK_LOCATION= "wildfly@maven(org.jboss.universe:community-universe)";
+    public static final String WILDFLY_DEFAULT_DIR= "server";
     /**
      * Tests if the character sequence is not {@code null} and not empty.
      *
