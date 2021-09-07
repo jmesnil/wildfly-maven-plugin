@@ -88,7 +88,7 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
      * &lt;jboss-fork-embedded&gt;true&lt;/jboss-fork-embedded&gt;<br/>
      * &lt;/plugin-options&gt;
      */
-    @Parameter(alias = "plugin-options", required = false)
+    @Parameter(required = false)
     Map<String, String> pluginOptions = Collections.emptyMap();
 
     /**
@@ -96,19 +96,19 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
      * offline mode the plugin will only use the local Maven repository for an
      * artifact resolution.
      */
-    @Parameter(alias = "offline", defaultValue = "false")
+    @Parameter(defaultValue = "false")
     boolean offline;
 
     /**
      * Whether to log provisioning time at the end
      */
-    @Parameter(alias = "log-time", defaultValue = "false")
+    @Parameter(defaultValue = "false")
     boolean logTime;
 
     /**
      * Whether to record provisioned state in .galleon directory.
      */
-    @Parameter(alias = "record-state", defaultValue = "false")
+    @Parameter(defaultValue = "false")
     boolean recordState;
 
     /**
@@ -129,14 +129,14 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
      * layers. Overrides galleon/provisioning.xml file. Can't be used in
      * conjunction with feature-pack-location.
      */
-    @Parameter(alias = "feature-packs", required = false)
+    @Parameter(required = false)
     List<FeaturePack> featurePacks = Collections.emptyList();
 
     /**
      * A list of custom configurations to install.
      */
-    @Parameter(alias = "configurations", required = false)
-    private List<Configuration> configs = Collections.emptyList();
+    @Parameter(required = false)
+    private List<Configuration> configurations = Collections.emptyList();
 
     /**
      * The target directory the application to be deployed is located.
@@ -179,8 +179,8 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
                 .setLogTime(logTime)
                 .setRecordState(recordState)
                 .build()) {
-            getLog().info("Provisioning server");
-            ProvisioningConfig config = GalleonUtils.buildConfig(pm, featurePacks, configs, pluginOptions);
+            getLog().info("Provisioning server in " + home);
+            ProvisioningConfig config = GalleonUtils.buildConfig(pm, featurePacks, configurations, pluginOptions);
             pm.provision(config);
             if (!recordState) {
                 Path file = home.resolve(PLUGIN_PROVISIONING_FILE);

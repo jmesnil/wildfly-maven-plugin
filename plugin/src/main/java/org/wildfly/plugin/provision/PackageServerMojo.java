@@ -57,7 +57,7 @@ public class PackageServerMojo extends AbstractProvisionServerMojo {
      * directory is not absolute, it has to be relative to the project base
      * directory.
      */
-    @Parameter(alias = "extra-server-content-dirs")
+    @Parameter
     List<String> extraServerContentDirs = Collections.emptyList();
 
     /**
@@ -89,7 +89,7 @@ public class PackageServerMojo extends AbstractProvisionServerMojo {
      * The name of the server configuration to use when deploying the
      * deployment. Defaults to 'standalone.xml'.
      */
-    @Parameter(alias = "server-config", property = PropertyNames.SERVER_CONFIG, defaultValue = GalleonUtils.STANDALONE_XML)
+    @Parameter(property = PropertyNames.SERVER_CONFIG, defaultValue = GalleonUtils.STANDALONE_XML)
     private String serverConfig;
 
     /**
@@ -108,7 +108,7 @@ public class PackageServerMojo extends AbstractProvisionServerMojo {
      * {@code runtime-name}.
      * </p>
      */
-    @Parameter(alias = "runtime-name", property = PropertyNames.DEPLOYMENT_RUNTIME_NAME)
+    @Parameter(property = PropertyNames.DEPLOYMENT_RUNTIME_NAME)
     private String runtimeName;
 
     /**
