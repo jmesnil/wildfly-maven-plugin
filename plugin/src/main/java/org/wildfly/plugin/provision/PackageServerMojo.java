@@ -293,6 +293,14 @@ public class PackageServerMojo extends AbstractProvisionServerMojo {
         IoUtils.recursiveDelete(tmp);
         Path log = jbossHome.resolve("standalone").resolve("log");
         IoUtils.recursiveDelete(log);
+        Path domainHistory = jbossHome.resolve("domain").resolve("configuration").resolve("domain_xml_history");
+        IoUtils.recursiveDelete(domainHistory);
+        Path hostHistory = jbossHome.resolve("domain").resolve("configuration").resolve("host_xml_history");
+        IoUtils.recursiveDelete(hostHistory);
+        Path domainTmp = jbossHome.resolve("domain").resolve("tmp");
+        IoUtils.recursiveDelete(domainTmp);
+        Path domainLog = jbossHome.resolve("domain").resolve("log");
+        IoUtils.recursiveDelete(domainLog);
     }
 
     private MavenModelControllerClientConfiguration getClientConfiguration() {

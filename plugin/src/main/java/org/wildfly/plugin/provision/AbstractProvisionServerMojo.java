@@ -19,6 +19,7 @@ package org.wildfly.plugin.provision;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
@@ -181,6 +182,10 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
             getLog().info("Provisioning server in " + home);
             ProvisioningConfig config = GalleonUtils.buildConfig(pm, featurePacks, configurations, pluginOptions);
             pm.provision(config);
+            if (!Files.exists(home)) {
+                getLog().error("Invalid galleon provisioning, no server provisioned in " + home);
+                throw new MojoExecutionException("Invalid plugin configuration, no server provisioned.");
+            }
             if (!recordState) {
                 Path file = home.resolve(PLUGIN_PROVISIONING_FILE);
                 try (FileWriter writer = new FileWriter(file.toFile())) {
