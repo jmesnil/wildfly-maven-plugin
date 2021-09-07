@@ -38,7 +38,7 @@ import org.wildfly.plugin.cli.CommandConfiguration;
 import org.wildfly.plugin.cli.CommandExecutor;
 import org.wildfly.plugin.common.MavenModelControllerClientConfiguration;
 import org.wildfly.plugin.common.PropertyNames;
-import org.wildfly.plugin.core.GalleonUtils;
+import static org.wildfly.plugin.core.GalleonUtils.DOMAIN_XML;
 import static org.wildfly.plugin.core.GalleonUtils.STANDALONE;
 import static org.wildfly.plugin.core.GalleonUtils.STANDALONE_XML;
 import org.wildfly.plugin.deployment.PackageType;
@@ -53,11 +53,17 @@ import org.wildfly.plugin.deployment.PackageType;
 public class PackageServerMojo extends AbstractProvisionServerMojo {
 
     /**
+     * The server groups the content should be deployed to.
+     */
+    @Parameter(alias = "server-groups", property = PropertyNames.SERVER_GROUPS)
+    private List<String> serverGroups;
+
+    /**
      * A list of directories to copy content to the provisioned server. If a
      * directory is not absolute, it has to be relative to the project base
      * directory.
      */
-    @Parameter
+    @Parameter(alias="extra-server-content-dirs")
     List<String> extraServerContentDirs = Collections.emptyList();
 
     /**
@@ -87,9 +93,9 @@ public class PackageServerMojo extends AbstractProvisionServerMojo {
 
     /**
      * The name of the server configuration to use when deploying the
-     * deployment. Defaults to 'standalone.xml'.
+     * deployment. Defaults to 'standalone.xml' if no server-groups have been provided otherwise 'domain.xml'.
      */
-    @Parameter(property = PropertyNames.SERVER_CONFIG, defaultValue = GalleonUtils.STANDALONE_XML)
+    @Parameter(property = PropertyNames.SERVER_CONFIG, alias="server-config")
     private String serverConfig;
 
     /**
@@ -108,7 +114,7 @@ public class PackageServerMojo extends AbstractProvisionServerMojo {
      * {@code runtime-name}.
      * </p>
      */
-    @Parameter(property = PropertyNames.DEPLOYMENT_RUNTIME_NAME)
+    @Parameter(property = PropertyNames.DEPLOYMENT_RUNTIME_NAME, alias="runtime-name")
     private String runtimeName;
 
     /**
@@ -162,10 +168,7 @@ public class PackageServerMojo extends AbstractProvisionServerMojo {
         final Path deploymentContent = getDeploymentContent();
         if (Files.exists(deploymentContent)) {
             getLog().info("Deploying " + deploymentContent);
-            List<String> deploymentCommands = new ArrayList<>();
-            deploymentCommands.add("embed-server --server-config=" + serverConfig);
-            deploymentCommands.add("deploy  " + deploymentContent + " --name=" + (name == null ? deploymentContent.getFileName() : name)
-                    + " --runtime-name=" + (runtimeName == null ? deploymentContent.getFileName() : runtimeName));
+            List<String> deploymentCommands = getDeploymentCommands(deploymentContent);
             final CommandConfiguration cmdConfigDeployment = CommandConfiguration.of(this::createClient, this::getClientConfiguration)
                     .addCommands(deploymentCommands)
                     .setJBossHome(jbossHome)
@@ -179,6 +182,34 @@ public class PackageServerMojo extends AbstractProvisionServerMojo {
         } catch (IOException ex) {
             throw new MojoExecutionException(ex.getLocalizedMessage(), ex);
         }
+    }
+
+    private List<String> getDeploymentCommands(Path deploymentContent) {
+        List<String> deploymentCommands = new ArrayList<>();
+        StringBuilder deploymentBuilder = new StringBuilder();
+        deploymentBuilder.append("deploy  ").append(deploymentContent).append(" --name=").
+                append(name == null ? deploymentContent.getFileName() : name).append(" --runtime-name=").
+                append(runtimeName == null ? deploymentContent.getFileName() : runtimeName);
+        if (serverGroups == null || serverGroups.isEmpty()) {
+            serverConfig = serverConfig == null ? STANDALONE_XML: serverConfig;
+            deploymentCommands.add("embed-server --server-config=" + serverConfig);
+            deploymentCommands.add(deploymentBuilder.toString());
+            deploymentCommands.add("stop-embedded-server");
+        } else {
+            serverConfig = serverConfig == null ? DOMAIN_XML : serverConfig;
+            deploymentCommands.add("embed-host-controller --domain-config=" + serverConfig);
+            deploymentBuilder.append(" --server-groups=");
+            for (int i = 0; i < serverGroups.size(); i++) {
+                deploymentBuilder.append(serverGroups.get(i));
+                if (i < serverGroups.size() - 1) {
+                    deploymentBuilder.append(",");
+                }
+            }
+            deploymentCommands.add(deploymentBuilder.toString());
+            deploymentCommands.add("stop-embedded-host-controller");
+        }
+
+        return deploymentCommands;
     }
 
     public void copyExtraContent(Path target) throws MojoExecutionException, IOException {

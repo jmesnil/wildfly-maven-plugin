@@ -88,7 +88,7 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
      * &lt;jboss-fork-embedded&gt;true&lt;/jboss-fork-embedded&gt;<br/>
      * &lt;/plugin-options&gt;
      */
-    @Parameter(required = false)
+    @Parameter(required = false, alias = "plugin-options")
     Map<String, String> pluginOptions = Collections.emptyMap();
 
     /**
@@ -102,13 +102,13 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
     /**
      * Whether to log provisioning time at the end
      */
-    @Parameter(defaultValue = "false")
+    @Parameter(alias = "log-time", defaultValue = "false")
     boolean logTime;
 
     /**
      * Whether to record provisioned state in .galleon directory.
      */
-    @Parameter(defaultValue = "false")
+    @Parameter(alias = "record-state", defaultValue = "false")
     boolean recordState;
 
     /**
@@ -121,15 +121,14 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
     /**
      * The directory name inside the buildDir where to provision the server. By default the server is provisioned into the 'server' directory.
      */
-    @Parameter(property = PropertyNames.WILDFLY_PROVISION_DIRECTORY_NAME, defaultValue = Utils.WILDFLY_DEFAULT_DIR)
+    @Parameter(alias="provision-directory-name", property = PropertyNames.WILDFLY_PROVISION_DIRECTORY_NAME, defaultValue = Utils.WILDFLY_DEFAULT_DIR)
     private String provisionDirectoryName;
 
     /**
      * A list of feature-pack configurations to install, can be combined with
-     * layers. Overrides galleon/provisioning.xml file. Can't be used in
-     * conjunction with feature-pack-location.
+     * layers.
      */
-    @Parameter(required = false)
+    @Parameter(required = false, alias= "feature-packs")
     List<FeaturePack> featurePacks = Collections.emptyList();
 
     /**

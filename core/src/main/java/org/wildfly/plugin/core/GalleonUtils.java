@@ -40,6 +40,7 @@ public class GalleonUtils {
 
     public static final String STANDALONE = "standalone";
     public static final String STANDALONE_XML = "standalone.xml";
+    public static final String DOMAIN_XML = "domain.xml";
     public static final String PLUGIN_PROVISIONING_FILE = ".wildfly-maven-plugin-provisioning.xml";
 
     /**
