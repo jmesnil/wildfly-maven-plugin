@@ -46,6 +46,10 @@
                             </layers>
                         </config>
                     </configurations>
+                    <pluginOptions>
+                        <jboss-fork-embedded>true</jboss-fork-embedded>
+                    </pluginOptions>
+                    <record-state>false</record-state>
                 </configuration>
             </plugin>
         </plugins>

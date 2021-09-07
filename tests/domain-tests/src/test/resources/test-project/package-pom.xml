@@ -40,6 +40,9 @@
                     <server-groups>
                         <server-group>other-server-group</server-group>
                     </server-groups>
+                    <scripts>
+                        <script>test-package.cli</script>
+                    </scripts>
                     <commands>
                         <command>/system-property=org.wildfly.maven.plugin-package-goal:add(value=true)</command>
                     </commands>
@@ -47,6 +50,7 @@
                         <jboss-fork-embedded>true</jboss-fork-embedded>
                     </pluginOptions>
                     <filename>test.war</filename>
+                    <record-state>true</record-state>
                 </configuration>
             </plugin>
         </plugins>

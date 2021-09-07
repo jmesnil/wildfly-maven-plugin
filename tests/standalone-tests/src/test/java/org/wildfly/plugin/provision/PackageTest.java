@@ -22,8 +22,11 @@
 package org.wildfly.plugin.provision;
 
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.apache.maven.plugin.Mojo;
 import org.junit.Test;
+import org.junit.Assert;
 import org.wildfly.plugin.tests.AbstractProvisionConfiguredMojoTestCase;
 import org.wildfly.plugin.tests.AbstractWildFlyMojoTest;
 
@@ -39,7 +42,13 @@ public class PackageTest extends AbstractProvisionConfiguredMojoTestCase {
         final Mojo packageMojo =  lookupConfiguredMojo(AbstractWildFlyMojoTest.getPomFile("package-pom.xml").toFile(), "package");
 
         packageMojo.execute();
-
+        Path jbossHome = AbstractWildFlyMojoTest.getBaseDir().resolve("target").resolve("server");
+        Assert.assertTrue(Files.exists(jbossHome.resolve("standalone").
+                resolve("configuration").resolve("foo.txt")));
+        String[] layers = {"jaxrs-server"};
+        String[] excluded = {"deployment-scanner"};
+        checkStandaloneWildFlyHome(jbossHome, 1, layers, excluded, true, "org.wildfly.maven.plugin-package-goal",
+                "org.wildfly.maven.plugin-package-goal-from-script");
     }
 
 }

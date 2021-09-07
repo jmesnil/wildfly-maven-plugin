@@ -37,6 +37,10 @@
                             <inherit-packages>true</inherit-packages>
                         </feature-pack>
                     </feature-packs>
+                    <pluginOptions>
+                        <jboss-fork-embedded>true</jboss-fork-embedded>
+                    </pluginOptions>
+                    <record-state>false</record-state>
                 </configuration>
             </plugin>
         </plugins>

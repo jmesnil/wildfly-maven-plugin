@@ -22,6 +22,7 @@
 package org.wildfly.plugin.provision;
 
 
+import java.nio.file.Path;
 import org.apache.maven.plugin.Mojo;
 import org.junit.Test;
 import org.wildfly.plugin.tests.AbstractProvisionConfiguredMojoTestCase;
@@ -39,7 +40,9 @@ public class PackageTest extends AbstractProvisionConfiguredMojoTestCase {
         final Mojo packageMojo =  lookupConfiguredMojo(AbstractWildFlyMojoTest.getPomFile("package-pom.xml").toFile(), "package");
 
         packageMojo.execute();
-
+        Path jbossHome = AbstractWildFlyMojoTest.getBaseDir().resolve("target").resolve("server");
+        checkDomainWildFlyHome(jbossHome, 1, true, "org.wildfly.maven.plugin-package-goal",
+                "org.wildfly.maven.plugin-package-goal-from-script");
     }
 
 }
