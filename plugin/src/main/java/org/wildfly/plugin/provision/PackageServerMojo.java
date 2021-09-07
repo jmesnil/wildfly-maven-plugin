@@ -18,6 +18,7 @@ package org.wildfly.plugin.provision;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -63,7 +64,7 @@ public class PackageServerMojo extends AbstractProvisionServerMojo {
      * directory is not absolute, it has to be relative to the project base
      * directory.
      */
-    @Parameter(alias="extra-server-content-dirs")
+    @Parameter(alias = "extra-server-content-dirs")
     List<String> extraServerContentDirs = Collections.emptyList();
 
     /**
@@ -93,9 +94,10 @@ public class PackageServerMojo extends AbstractProvisionServerMojo {
 
     /**
      * The name of the server configuration to use when deploying the
-     * deployment. Defaults to 'standalone.xml' if no server-groups have been provided otherwise 'domain.xml'.
+     * deployment. Defaults to 'standalone.xml' if no server-groups have been
+     * provided otherwise 'domain.xml'.
      */
-    @Parameter(property = PropertyNames.SERVER_CONFIG, alias="server-config")
+    @Parameter(property = PropertyNames.SERVER_CONFIG, alias = "server-config")
     private String serverConfig;
 
     /**
@@ -114,7 +116,7 @@ public class PackageServerMojo extends AbstractProvisionServerMojo {
      * {@code runtime-name}.
      * </p>
      */
-    @Parameter(property = PropertyNames.DEPLOYMENT_RUNTIME_NAME, alias="runtime-name")
+    @Parameter(property = PropertyNames.DEPLOYMENT_RUNTIME_NAME, alias = "runtime-name")
     private String runtimeName;
 
     /**
@@ -153,18 +155,7 @@ public class PackageServerMojo extends AbstractProvisionServerMojo {
         } catch (IOException ex) {
             throw new MojoExecutionException(ex.getLocalizedMessage(), ex);
         }
-        // CLI execution
-        if (!commands.isEmpty() || !scripts.isEmpty()) {
-            getLog().info("Excuting CLI commands and scripts");
-            final CommandConfiguration cmdConfig = CommandConfiguration.of(this::createClient, this::getClientConfiguration)
-                    .addCommands(commands)
-                    .addScripts(scripts)
-                    .setJBossHome(jbossHome)
-                    .setFork(true)
-                    .setStdout(stdout)
-                    .setOffline(true);
-            commandExecutor.execute(cmdConfig);
-        }
+
         final Path deploymentContent = getDeploymentContent();
         if (Files.exists(deploymentContent)) {
             getLog().info("Deploying " + deploymentContent);
@@ -177,7 +168,27 @@ public class PackageServerMojo extends AbstractProvisionServerMojo {
                     .setOffline(true);
             commandExecutor.execute(cmdConfigDeployment);
         }
-        try {
+        // CLI execution
+         try {
+            if (!commands.isEmpty() || !scripts.isEmpty()) {
+                getLog().info("Excuting CLI commands and scripts");
+                List<File> wrappedScripts = wrapOfflineScripts(scripts);
+                try {
+                    final CommandConfiguration cmdConfig = CommandConfiguration.of(this::createClient, this::getClientConfiguration)
+                            .addCommands(wrapOfflineCommands(commands))
+                            .addScripts(wrappedScripts)
+                            .setJBossHome(jbossHome)
+                            .setFork(true)
+                            .setStdout(stdout)
+                            .setOffline(true);
+                    commandExecutor.execute(cmdConfig);
+                } finally {
+                    for(File f : wrappedScripts) {
+                        Files.delete(f.toPath());
+                    }
+                }
+            }
+
             cleanupServer(jbossHome);
         } catch (IOException ex) {
             throw new MojoExecutionException(ex.getLocalizedMessage(), ex);
@@ -191,13 +202,8 @@ public class PackageServerMojo extends AbstractProvisionServerMojo {
                 append(name == null ? deploymentContent.getFileName() : name).append(" --runtime-name=").
                 append(runtimeName == null ? deploymentContent.getFileName() : runtimeName);
         if (serverGroups == null || serverGroups.isEmpty()) {
-            serverConfig = serverConfig == null ? STANDALONE_XML: serverConfig;
-            deploymentCommands.add("embed-server --server-config=" + serverConfig);
             deploymentCommands.add(deploymentBuilder.toString());
-            deploymentCommands.add("stop-embedded-server");
         } else {
-            serverConfig = serverConfig == null ? DOMAIN_XML : serverConfig;
-            deploymentCommands.add("embed-host-controller --domain-config=" + serverConfig);
             deploymentBuilder.append(" --server-groups=");
             for (int i = 0; i < serverGroups.size(); i++) {
                 deploymentBuilder.append(serverGroups.get(i));
@@ -206,10 +212,45 @@ public class PackageServerMojo extends AbstractProvisionServerMojo {
                 }
             }
             deploymentCommands.add(deploymentBuilder.toString());
-            deploymentCommands.add("stop-embedded-host-controller");
         }
 
-        return deploymentCommands;
+        return wrapOfflineCommands(deploymentCommands);
+    }
+
+    private List<String> wrapOfflineCommands(List<String> commands) {
+        List<String> offlineCommands = new ArrayList<>();
+         if (serverGroups == null || serverGroups.isEmpty()) {
+            serverConfig = serverConfig == null ? STANDALONE_XML : serverConfig;
+            offlineCommands.add("embed-server --server-config=" + serverConfig);
+            offlineCommands.addAll(commands);
+            offlineCommands.add("stop-embedded-server");
+         } else {
+              serverConfig = serverConfig == null ? DOMAIN_XML : serverConfig;
+            offlineCommands.add("embed-host-controller --domain-config=" + serverConfig);
+            offlineCommands.addAll(commands);
+            offlineCommands.add("stop-embedded-host-controller");
+         }
+         return offlineCommands;
+    }
+
+    private List<File> wrapOfflineScripts(List<File> scripts) throws IOException, MojoExecutionException {
+        List<File> wrappedScripts = new ArrayList<>();
+        for(File script : scripts) {
+            wrappedScripts.add(wrapScript(script).toFile());
+        }
+        return wrappedScripts;
+    }
+
+    private Path wrapScript(File script) throws IOException, MojoExecutionException {
+        final Path tempScript = Files.createTempFile("offline-cli-script", ".cli");
+        Path resolvedScript = resolvePath(project, script.toPath());
+        if (!Files.exists(resolvedScript)) {
+            throw new MojoExecutionException("CLI script " + resolvedScript + " doesn't exist");
+        }
+        List<String> cmds = Files.readAllLines(resolvedScript, StandardCharsets.UTF_8);
+        List<String> wrappedCommands = wrapOfflineCommands(cmds);
+        Files.write(tempScript, wrappedCommands, StandardCharsets.UTF_8);
+        return tempScript;
     }
 
     public void copyExtraContent(Path target) throws MojoExecutionException, IOException {
