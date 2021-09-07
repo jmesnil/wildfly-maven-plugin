@@ -39,6 +39,7 @@ import org.wildfly.plugin.cli.CommandConfiguration;
 import org.wildfly.plugin.cli.CommandExecutor;
 import org.wildfly.plugin.common.MavenModelControllerClientConfiguration;
 import org.wildfly.plugin.common.PropertyNames;
+import static org.wildfly.plugin.core.GalleonUtils.DOMAIN;
 import static org.wildfly.plugin.core.GalleonUtils.DOMAIN_XML;
 import static org.wildfly.plugin.core.GalleonUtils.STANDALONE;
 import static org.wildfly.plugin.core.GalleonUtils.STANDALONE_XML;
@@ -195,15 +196,16 @@ public class PackageServerMojo extends AbstractProvisionServerMojo {
         }
     }
 
-    private List<String> getDeploymentCommands(Path deploymentContent) {
+    private List<String> getDeploymentCommands(Path deploymentContent) throws MojoExecutionException {
         List<String> deploymentCommands = new ArrayList<>();
         StringBuilder deploymentBuilder = new StringBuilder();
         deploymentBuilder.append("deploy  ").append(deploymentContent).append(" --name=").
                 append(name == null ? deploymentContent.getFileName() : name).append(" --runtime-name=").
                 append(runtimeName == null ? deploymentContent.getFileName() : runtimeName);
-        if (serverGroups == null || serverGroups.isEmpty()) {
-            deploymentCommands.add(deploymentBuilder.toString());
-        } else {
+        if (isDomain()) {
+            if (serverGroups == null || serverGroups.isEmpty()) {
+                throw new MojoExecutionException("Can't deploy, no server-groups provided.");
+            }
             deploymentBuilder.append(" --server-groups=");
             for (int i = 0; i < serverGroups.size(); i++) {
                 deploymentBuilder.append(serverGroups.get(i));
@@ -212,6 +214,8 @@ public class PackageServerMojo extends AbstractProvisionServerMojo {
                 }
             }
             deploymentCommands.add(deploymentBuilder.toString());
+        } else {
+            deploymentCommands.add(deploymentBuilder.toString());
         }
 
         return wrapOfflineCommands(deploymentCommands);
@@ -219,18 +223,20 @@ public class PackageServerMojo extends AbstractProvisionServerMojo {
 
     private List<String> wrapOfflineCommands(List<String> commands) {
         List<String> offlineCommands = new ArrayList<>();
-         if (serverGroups == null || serverGroups.isEmpty()) {
-            serverConfig = serverConfig == null ? STANDALONE_XML : serverConfig;
-            offlineCommands.add("embed-server --server-config=" + serverConfig);
-            offlineCommands.addAll(commands);
-            offlineCommands.add("stop-embedded-server");
-         } else {
-              serverConfig = serverConfig == null ? DOMAIN_XML : serverConfig;
-            offlineCommands.add("embed-host-controller --domain-config=" + serverConfig);
+         if (isDomain()) {
+            offlineCommands.add("embed-host-controller --domain-config=" + getServerConfigName(true));
             offlineCommands.addAll(commands);
             offlineCommands.add("stop-embedded-host-controller");
+         } else {
+            offlineCommands.add("embed-server --server-config=" + getServerConfigName(false));
+            offlineCommands.addAll(commands);
+            offlineCommands.add("stop-embedded-server");
          }
          return offlineCommands;
+    }
+
+    private String getServerConfigName(boolean isDomain) {
+        return isDomain ? (serverConfig == null ? DOMAIN_XML : serverConfig) : (serverConfig == null ? STANDALONE_XML : serverConfig);
     }
 
     private List<File> wrapOfflineScripts(List<File> scripts) throws IOException, MojoExecutionException {
@@ -267,8 +273,20 @@ public class PackageServerMojo extends AbstractProvisionServerMojo {
 
     }
 
+    private boolean isDomain() {
+      if (DOMAIN_XML.equals(serverConfig)) {
+          return true;
+      }
+      if (serverGroups != null && !serverGroups.isEmpty()) {
+          return true;
+      }
+      return false;
+    }
+
     private void warnExtraConfig(Path extraContentDir) {
-        Path config = extraContentDir.resolve(STANDALONE).resolve("configurations").resolve(STANDALONE_XML);
+        boolean isDomain = isDomain();
+        String configDir = isDomain ? DOMAIN : STANDALONE;
+        Path config = extraContentDir.resolve(configDir).resolve("configurations").resolve(getServerConfigName(isDomain));
         if (Files.exists(config)) {
             getLog().warn("The file " + config + " overrides the Galleon generated configuration, "
                     + "un-expected behavior can occur when starting the server");
