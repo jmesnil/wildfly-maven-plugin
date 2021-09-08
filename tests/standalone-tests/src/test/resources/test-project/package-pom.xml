@@ -37,18 +37,14 @@
                             <inherit-packages>false</inherit-packages>
                         </feature-pack>
                     </feature-packs>
-                    <configurations>
-                        <config>
-                            <model>standalone</model>
-                            <name>standalone.xml</name>
+                    <server-configuration>
                             <layers>
                                 <layer>jaxrs-server</layer>
                             </layers>
                             <excluded-layers>
                                 <layer>deployment-scanner</layer>
                             </excluded-layers>
-                        </config>
-                    </configurations>
+                    </server-configuration>
                     <scripts>
                         <script>test-package.cli</script>
                     </scripts>

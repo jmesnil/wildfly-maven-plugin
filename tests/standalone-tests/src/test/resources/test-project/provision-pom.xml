@@ -37,15 +37,11 @@
                             <inherit-packages>false</inherit-packages>
                         </feature-pack>
                     </feature-packs>
-                    <configurations>
-                        <config>
-                            <model>standalone</model>
-                            <name>standalone.xml</name>
+                    <server-configuration>
                             <layers>
                                 <layer>jaxrs-server</layer>
                             </layers>
-                        </config>
-                    </configurations>
+                    </server-configuration>
                     <pluginOptions>
                         <jboss-fork-embedded>true</jboss-fork-embedded>
                     </pluginOptions>

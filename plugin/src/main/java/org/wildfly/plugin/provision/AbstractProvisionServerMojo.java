@@ -21,6 +21,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -133,10 +135,10 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
     List<FeaturePack> featurePacks = Collections.emptyList();
 
     /**
-     * A list of custom configurations to install.
+     * A server configuration that contains included and excluded layers.
      */
-    @Parameter(required = false)
-    private List<Configuration> configurations = Collections.emptyList();
+    @Parameter(required = false, alias = "server-configuration")
+    private Configuration serverConfiguration;
 
     /**
      * The path to the {@code provisioning.xml} file to use. Note that this cannot be used with the {@code feature-packs}
@@ -189,11 +191,12 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
                 .build()) {
             getLog().info("Provisioning server in " + home);
             ProvisioningConfig config = null;
-            boolean provisioningFileExists = Files.exists(provisioningFile.toPath());
+            Path resolvedProvisioningFile = resolvePath(project, provisioningFile.toPath());
+            boolean provisioningFileExists = Files.exists(resolvedProvisioningFile);
             if (featurePacks.isEmpty()) {
                 if (provisioningFileExists) {
-                    getLog().info("Provisioning server using " + provisioningFile + " file.");
-                    config = GalleonUtils.buildConfig(provisioningFile.toPath());
+                    getLog().info("Provisioning server using " + resolvedProvisioningFile + " file.");
+                    config = GalleonUtils.buildConfig(resolvedProvisioningFile);
                 } else {
                     throw new MojoExecutionException("No feature-pack has been configured, can't provision a server.");
                 }
@@ -201,7 +204,12 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
                 if (provisioningFileExists) {
                     getLog().warn("Galleon provisioning file " + provisioningFile + " is ignored, plugin configuration is used.");
                 }
-                config = GalleonUtils.buildConfig(pm, featurePacks, configurations, pluginOptions);
+                List<Configuration> serverConfigurations = Collections.emptyList();
+                if (serverConfiguration != null) {
+                    serverConfigurations = new ArrayList<>();
+                    serverConfigurations.add(serverConfiguration);
+                }
+                config = GalleonUtils.buildConfig(pm, featurePacks, serverConfigurations, pluginOptions);
             }
             pm.provision(config);
             if (!Files.exists(home)) {
@@ -215,5 +223,12 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
                 }
             }
         }
+    }
+
+    static Path resolvePath(MavenProject project, Path path) {
+        if (!path.isAbsolute()) {
+            path = Paths.get(project.getBasedir().getAbsolutePath()).resolve(path);
+        }
+        return path;
     }
 }

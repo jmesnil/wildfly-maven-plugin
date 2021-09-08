@@ -32,7 +32,6 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
-import org.apache.maven.project.MavenProject;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.galleon.util.IoUtils;
 import org.wildfly.plugin.cli.CommandConfiguration;
@@ -122,9 +121,7 @@ public class PackageServerMojo extends AbstractProvisionServerMojo {
 
     /**
      * Indicates how {@code stdout} and {@code stderr} should be handled for the
-     * spawned CLI process. Currently a new process is only spawned if
-     * {@code offline} is set to {@code true} or {@code fork} is set to
-     * {@code true}. Note that {@code stderr} will be redirected to
+     * spawned CLI process. Note that {@code stderr} will be redirected to
      * {@code stdout} if the value is defined unless the value is {@code none}.
      * <div>
      * By default {@code stdout} and {@code stderr} are inherited from the
@@ -329,10 +326,4 @@ public class PackageServerMojo extends AbstractProvisionServerMojo {
         return null;
     }
 
-    private static Path resolvePath(MavenProject project, Path path) {
-        if (!path.isAbsolute()) {
-            path = Paths.get(project.getBasedir().getAbsolutePath()).resolve(path);
-        }
-        return path;
-    }
 }

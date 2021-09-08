@@ -32,6 +32,8 @@ import org.jboss.galleon.maven.plugin.util.FeaturePack;
 import org.jboss.galleon.universe.FeaturePackLocation;
 import org.jboss.galleon.universe.maven.repo.MavenRepoManager;
 import org.jboss.galleon.xml.ProvisioningXmlParser;
+import static org.wildfly.plugin.core.Constants.STANDALONE;
+import static org.wildfly.plugin.core.Constants.STANDALONE_XML;
 
 /**
  * @author jdenise
@@ -145,8 +147,10 @@ public class GalleonUtils {
 
         boolean hasLayers = false;
         for (Configuration config : configurations) {
+            String model = config.getModel() == null ? STANDALONE : config.getModel();
+            String name = config.getName() == null ? STANDALONE_XML : config.getName();
             ConfigModel.Builder configBuilder = ConfigModel.
-                    builder(config.getModel(), config.getName());
+                    builder(model, name);
             for (String layer : config.getLayers()) {
                 hasLayers = true;
                 configBuilder.includeLayer(layer);
