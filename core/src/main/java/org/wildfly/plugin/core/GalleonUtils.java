@@ -31,6 +31,7 @@ import org.jboss.galleon.maven.plugin.util.ConfigurationId;
 import org.jboss.galleon.maven.plugin.util.FeaturePack;
 import org.jboss.galleon.universe.FeaturePackLocation;
 import org.jboss.galleon.universe.maven.repo.MavenRepoManager;
+import org.jboss.galleon.xml.ProvisioningXmlParser;
 
 /**
  * @author jdenise
@@ -57,6 +58,16 @@ public class GalleonUtils {
                 .build()) {
             pm.provision(state.build());
         }
+    }
+
+    /**
+     * Build a Galleon provisioning configuration based on a provisioning.xml file.
+     * @param provisioningFile
+     * @return The provisioning config.
+     * @throws ProvisioningException
+     */
+    public static ProvisioningConfig buildConfig(Path provisioningFile) throws ProvisioningException {
+        return ProvisioningXmlParser.parse(provisioningFile);
     }
 
     /**

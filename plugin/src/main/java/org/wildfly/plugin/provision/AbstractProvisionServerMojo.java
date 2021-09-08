@@ -139,6 +139,14 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
     private List<Configuration> configurations = Collections.emptyList();
 
     /**
+     * The path to the {@code provisioning.xml} file to use. Note that this cannot be used with the {@code feature-packs}
+     * or {@code configurations}.
+     * If the provisioning file is not absolute, it has to be relative to the project base directory.
+     */
+    @Parameter(alias = "provisioning-file", property = PropertyNames.WILDFLY_PROVISION_PROVISIONING_FILE, defaultValue = "${project.basedir}/galleon/provisioning.xml")
+    private File provisioningFile;
+
+    /**
      * The target directory the application to be deployed is located.
      */
     @Parameter(defaultValue = "${project.build.directory}/", property = PropertyNames.DEPLOYMENT_TARGET_DIR)
@@ -180,7 +188,21 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
                 .setRecordState(recordState)
                 .build()) {
             getLog().info("Provisioning server in " + home);
-            ProvisioningConfig config = GalleonUtils.buildConfig(pm, featurePacks, configurations, pluginOptions);
+            ProvisioningConfig config = null;
+            boolean provisioningFileExists = Files.exists(provisioningFile.toPath());
+            if (featurePacks.isEmpty()) {
+                if (provisioningFileExists) {
+                    getLog().info("Provisioning server using " + provisioningFile + " file.");
+                    config = GalleonUtils.buildConfig(provisioningFile.toPath());
+                } else {
+                    throw new MojoExecutionException("No feature-pack has been configured, can't provision a server.");
+                }
+            } else {
+                if (provisioningFileExists) {
+                    getLog().warn("Galleon provisioning file " + provisioningFile + " is ignored, plugin configuration is used.");
+                }
+                config = GalleonUtils.buildConfig(pm, featurePacks, configurations, pluginOptions);
+            }
             pm.provision(config);
             if (!Files.exists(home)) {
                 getLog().error("Invalid galleon provisioning, no server provisioned in " + home);
