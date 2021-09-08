@@ -49,7 +49,7 @@ import org.jboss.galleon.xml.ProvisioningXmlWriter;
 import org.wildfly.plugin.common.PropertyNames;
 import org.wildfly.plugin.common.Utils;
 import org.wildfly.plugin.core.GalleonUtils;
-import static org.wildfly.plugin.core.GalleonUtils.PLUGIN_PROVISIONING_FILE;
+import static org.wildfly.plugin.core.Constants.PLUGIN_PROVISIONING_FILE;
 import org.wildfly.plugin.core.MavenRepositoriesEnricher;
 
 

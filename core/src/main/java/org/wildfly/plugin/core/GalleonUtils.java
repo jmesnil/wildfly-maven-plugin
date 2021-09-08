@@ -20,7 +20,6 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import org.apache.maven.plugin.MojoExecutionException;
 import org.jboss.galleon.Constants;
 import org.jboss.galleon.ProvisioningException;
 import org.jboss.galleon.ProvisioningManager;
@@ -37,12 +36,6 @@ import org.jboss.galleon.universe.maven.repo.MavenRepoManager;
  * @author jdenise
  */
 public class GalleonUtils {
-
-    public static final String STANDALONE = "standalone";
-    public static final String STANDALONE_XML = "standalone.xml";
-    public static final String DOMAIN = "domain";
-    public static final String DOMAIN_XML = "domain.xml";
-    public static final String PLUGIN_PROVISIONING_FILE = ".wildfly-maven-plugin-provisioning.xml";
 
     /**
      * Galleon provisioning of a default server.
@@ -74,18 +67,17 @@ public class GalleonUtils {
      * @param pluginOptions Galleon plugin options.
      * @return The provisioning config.
      * @throws ProvisioningException
-     * @throws MojoExecutionException
      */
     public static ProvisioningConfig buildConfig(ProvisioningManager pm,
             List<FeaturePack> featurePacks,
             List<Configuration> configurations,
-            Map<String, String> pluginOptions) throws ProvisioningException, MojoExecutionException {
+            Map<String, String> pluginOptions) throws ProvisioningException, IllegalArgumentException {
         final ProvisioningConfig.Builder state = ProvisioningConfig.builder();
         for (FeaturePack fp : featurePacks) {
 
             if (fp.getLocation() == null && (fp.getGroupId() == null || fp.getArtifactId() == null)
                     && fp.getNormalizedPath() == null) {
-                throw new MojoExecutionException("Feature-pack location, Maven GAV or feature pack path is missing");
+                throw new IllegalArgumentException("Feature-pack location, Maven GAV or feature pack path is missing");
             }
 
             final FeaturePackLocation fpl;

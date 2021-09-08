@@ -39,10 +39,10 @@ import org.wildfly.plugin.cli.CommandConfiguration;
 import org.wildfly.plugin.cli.CommandExecutor;
 import org.wildfly.plugin.common.MavenModelControllerClientConfiguration;
 import org.wildfly.plugin.common.PropertyNames;
-import static org.wildfly.plugin.core.GalleonUtils.DOMAIN;
-import static org.wildfly.plugin.core.GalleonUtils.DOMAIN_XML;
-import static org.wildfly.plugin.core.GalleonUtils.STANDALONE;
-import static org.wildfly.plugin.core.GalleonUtils.STANDALONE_XML;
+import static org.wildfly.plugin.core.Constants.DOMAIN;
+import static org.wildfly.plugin.core.Constants.DOMAIN_XML;
+import static org.wildfly.plugin.core.Constants.STANDALONE;
+import static org.wildfly.plugin.core.Constants.STANDALONE_XML;
 import org.wildfly.plugin.deployment.PackageType;
 
 /**
