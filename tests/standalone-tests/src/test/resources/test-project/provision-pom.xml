@@ -33,8 +33,6 @@
                     <feature-packs>
                         <feature-pack>
                             <location>wildfly@maven(org.jboss.universe:community-universe)</location>
-                            <inherit-configs>false</inherit-configs>
-                            <inherit-packages>false</inherit-packages>
                         </feature-pack>
                     </feature-packs>
                     <server-configuration>

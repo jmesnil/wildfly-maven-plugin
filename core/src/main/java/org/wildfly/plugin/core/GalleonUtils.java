@@ -105,10 +105,14 @@ public class GalleonUtils {
 
             final FeaturePackConfig.Builder fpConfig = fp.isTransitive() ? FeaturePackConfig.transitiveBuilder(fpl)
                     : FeaturePackConfig.builder(fpl);
-            if (fp.isInheritConfigs() != null) {
+            if (fp.isInheritConfigs() == null) {
+                fpConfig.setInheritConfigs(false);
+            } else {
                 fpConfig.setInheritConfigs(fp.isInheritConfigs());
             }
-            if (fp.isInheritPackages() != null) {
+            if (fp.isInheritPackages() == null) {
+                fpConfig.setInheritPackages(false);
+            } else {
                 fpConfig.setInheritPackages(fp.isInheritPackages());
             }
 
