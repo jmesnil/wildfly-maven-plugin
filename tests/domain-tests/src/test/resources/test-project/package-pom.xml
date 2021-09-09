@@ -40,12 +40,16 @@
                     <server-groups>
                         <server-group>other-server-group</server-group>
                     </server-groups>
-                    <scripts>
-                        <script>test-package.cli</script>
-                    </scripts>
-                    <commands>
-                        <command>/system-property=org.wildfly.maven.plugin-package-goal:add(value=true)</command>
-                    </commands>
+                    <cli-sessions>
+                        <session>
+                            <scripts>
+                                <script>test-package.cli</script>
+                            </scripts>
+                            <commands>
+                                <command>/system-property=org.wildfly.maven.plugin-package-goal:add(value=true)</command>
+                            </commands>
+                        </session>
+                    </cli-sessions>
                     <pluginOptions>
                         <jboss-fork-embedded>true</jboss-fork-embedded>
                     </pluginOptions>

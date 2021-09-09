@@ -40,6 +40,7 @@ import org.wildfly.plugin.common.MavenModelControllerClientConfiguration;
 public class CommandConfiguration {
 
     private final Collection<String> jvmOptions;
+    private final Collection<String> cliArguments;
     private final Collection<String> commands;
     private final Map<String, String> systemProperties;
     private final Collection<Path> propertiesFiles;
@@ -64,6 +65,7 @@ public class CommandConfiguration {
         propertiesFiles = new ArrayList<>();
         scripts = new ArrayList<>();
         failOnError = true;
+        cliArguments = new ArrayList<>();
     }
 
     /**
@@ -174,6 +176,29 @@ public class CommandConfiguration {
     public CommandConfiguration addJvmOptions(final String... jvmOptions) {
         if (jvmOptions != null) {
             Collections.addAll(this.jvmOptions, jvmOptions);
+        }
+        return this;
+    }
+
+    /**
+     * Returns the CLI arguments used if {@link #isFork()} or {@link #isOffline()} is set to {@code true}.
+     *
+     * @return the CLI arguments
+     */
+    public Collection<String> getCLIArguments() {
+        return Collections.unmodifiableCollection(cliArguments);
+    }
+
+    /**
+     * Adds the CLI arguments used if {@link #isFork()} or {@link #isOffline()} is set to {@code true}.
+     *
+     * @param arguments the CLI arguments or {@code null}
+     *
+     * @return this configuration
+     */
+    public CommandConfiguration addCLIArguments(final String... arguments) {
+        if (arguments != null) {
+            Collections.addAll(this.cliArguments, arguments);
         }
         return this;
     }

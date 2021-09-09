@@ -155,6 +155,7 @@ public class CommandExecutor extends AbstractLogEnabled {
 
             final CliCommandBuilder builder = CliCommandBuilder.of(config.getJBossHome())
                     .setScriptFile(scriptFile)
+                    .addCliArguments(config.getCLIArguments())
                     .setTimeout(config.getTimeout() * 1000);
             if (!config.isOffline()) {
                 builder.setConnection(clientConfiguration.getController());

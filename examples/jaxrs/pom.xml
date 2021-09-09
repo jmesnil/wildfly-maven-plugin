@@ -41,9 +41,9 @@
                         </feature-pack>
                     </feature-packs>
                     <server-configuration>
-                            <layers>
-                                <layer>jaxrs-server</layer>
-                            </layers>
+                        <layers>
+                            <layer>jaxrs-server</layer>
+                        </layers>
                     </server-configuration>
                     <plugin-options>
                         <jboss-fork-embedded>true</jboss-fork-embedded>
@@ -51,9 +51,13 @@
                     <extra-server-content-dirs>
                         <extra-content>extra-content</extra-content>
                     </extra-server-content-dirs>
-                    <scripts>
-                        <script>config.cli</script>
-                    </scripts>
+                    <cli-sessions>
+                        <session>
+                            <scripts>
+                                <script>config.cli</script>
+                            </scripts>
+                        </session>
+                    </cli-sessions>
                     <runtime-name>ROOT.war</runtime-name>
                 </configuration>
                 <executions>

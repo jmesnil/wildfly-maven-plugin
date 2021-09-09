@@ -34,10 +34,13 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.galleon.util.IoUtils;
+import org.wildfly.plugin.cli.CliSession;
 import org.wildfly.plugin.cli.CommandConfiguration;
 import org.wildfly.plugin.cli.CommandExecutor;
 import org.wildfly.plugin.common.MavenModelControllerClientConfiguration;
 import org.wildfly.plugin.common.PropertyNames;
+import static org.wildfly.plugin.core.Constants.CLI_ECHO_COMMAND_ARG;
+import static org.wildfly.plugin.core.Constants.CLI_RESOLVE_PARAMETERS_VALUES;
 import static org.wildfly.plugin.core.Constants.DOMAIN;
 import static org.wildfly.plugin.core.Constants.DOMAIN_XML;
 import static org.wildfly.plugin.core.Constants.STANDALONE;
@@ -68,16 +71,10 @@ public class PackageServerMojo extends AbstractProvisionServerMojo {
     List<String> extraServerContentDirs = Collections.emptyList();
 
     /**
-     * The CLI commands to execute before the deployment is deployed.
+     * The CLI sessions to execute.
      */
-    @Parameter(property = PropertyNames.COMMANDS)
-    private List<String> commands = new ArrayList<>();
-
-    /**
-     * The CLI script files to execute before the deployment is deployed.
-     */
-    @Parameter(property = PropertyNames.SCRIPTS)
-    private List<File> scripts = new ArrayList<>();
+    @Parameter(alias = "cli-sessions")
+    private List<CliSession> cliSessions = new ArrayList<>();
 
     /**
      * The file name of the application to be deployed.
@@ -161,6 +158,7 @@ public class PackageServerMojo extends AbstractProvisionServerMojo {
             final CommandConfiguration cmdConfigDeployment = CommandConfiguration.of(this::createClient, this::getClientConfiguration)
                     .addCommands(deploymentCommands)
                     .setJBossHome(jbossHome)
+                    .addCLIArguments(CLI_ECHO_COMMAND_ARG)
                     .setFork(true)
                     .setStdout(stdout)
                     .setOffline(true);
@@ -168,29 +166,48 @@ public class PackageServerMojo extends AbstractProvisionServerMojo {
         }
         // CLI execution
          try {
-            if (!commands.isEmpty() || !scripts.isEmpty()) {
-                getLog().info("Excuting CLI commands and scripts");
-                List<File> wrappedScripts = wrapOfflineScripts(scripts);
-                try {
-                    final CommandConfiguration cmdConfig = CommandConfiguration.of(this::createClient, this::getClientConfiguration)
-                            .addCommands(wrapOfflineCommands(commands))
-                            .addScripts(wrappedScripts)
-                            .setJBossHome(jbossHome)
-                            .setFork(true)
-                            .setStdout(stdout)
-                            .setOffline(true);
-                    commandExecutor.execute(cmdConfig);
-                } finally {
-                    for(File f : wrappedScripts) {
-                        Files.delete(f.toPath());
-                    }
-                }
-            }
+             if (!cliSessions.isEmpty()) {
+                 getLog().info("Excuting CLI commands and scripts");
+                 for (CliSession session : cliSessions) {
+                     List<File> wrappedScripts = wrapOfflineScripts(session.getScripts());
+                     try {
+                         final CommandConfiguration cmdConfig = CommandConfiguration.of(this::createClient, this::getClientConfiguration)
+                                 .addCommands(wrapOfflineCommands(session.getCommands()))
+                                 .addScripts(wrappedScripts)
+                                 .addCLIArguments(CLI_ECHO_COMMAND_ARG)
+                                 .setJBossHome(jbossHome)
+                                 .setFork(true)
+                                 .setStdout(stdout)
+                                 .addPropertiesFiles(resolveFiles(session.getPropertiesFiles()))
+                                 .addJvmOptions(session.getJavaOpts())
+                                 .setOffline(true);
+                         if (session.getResolveExpression()) {
+                            cmdConfig.addCLIArguments(CLI_RESOLVE_PARAMETERS_VALUES);
+                         }
+                         commandExecutor.execute(cmdConfig);
+                     } finally {
+                         for (File f : wrappedScripts) {
+                             Files.delete(f.toPath());
+                         }
+                     }
+                 }
+             }
 
             cleanupServer(jbossHome);
         } catch (IOException ex) {
             throw new MojoExecutionException(ex.getLocalizedMessage(), ex);
         }
+    }
+
+    private List<File> resolveFiles(List<File> files) {
+        if (files == null || files.isEmpty()) {
+            return files;
+        }
+        List<File> resolvedFiles = new ArrayList<>();
+        for(File f : files) {
+            resolvedFiles.add(resolvePath(project, f.toPath()).toFile());
+        }
+        return resolvedFiles;
     }
 
     private List<String> getDeploymentCommands(Path deploymentContent) throws MojoExecutionException {
@@ -219,6 +236,9 @@ public class PackageServerMojo extends AbstractProvisionServerMojo {
     }
 
     private List<String> wrapOfflineCommands(List<String> commands) {
+        if (commands == null || commands.isEmpty()) {
+            return commands;
+        }
         List<String> offlineCommands = new ArrayList<>();
          if (isDomain()) {
             offlineCommands.add("embed-host-controller --domain-config=" + getServerConfigName(true));
