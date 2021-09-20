@@ -41,20 +41,19 @@
                         <galleon-options>
                             <jboss-fork-embedded>true</jboss-fork-embedded>
                         </galleon-options>
+                        <packaging-scripts>
+                            <packaging-script>
+                                <resolve-expressions>false</resolve-expressions>
+                                <file>test-package.cli</file>
+                                <java-opts>
+                                    <java-opt>-Xmx50m</java-opt>
+                                </java-opts>
+                            </packaging-script>
+                        </packaging-scripts>
                     </packaging>
                     <server-groups>
                         <server-group>other-server-group</server-group>
                     </server-groups>
-                    <cli-sessions>
-                        <session>
-                            <scripts>
-                                <script>test-package.cli</script>
-                            </scripts>
-                            <commands>
-                                <command>/system-property=org.wildfly.maven.plugin-package-goal:add(value=true)</command>
-                            </commands>
-                        </session>
-                    </cli-sessions>
                     <filename>test.war</filename>
                     <record-state>true</record-state>
                 </configuration>

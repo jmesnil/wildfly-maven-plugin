@@ -16,6 +16,13 @@
  */
 package org.wildfly.plugin.provision;
 
+import static org.wildfly.plugin.core.Constants.CLI_ECHO_COMMAND_ARG;
+import static org.wildfly.plugin.core.Constants.CLI_RESOLVE_PARAMETERS_VALUES;
+import static org.wildfly.plugin.core.Constants.DOMAIN;
+import static org.wildfly.plugin.core.Constants.DOMAIN_XML;
+import static org.wildfly.plugin.core.Constants.STANDALONE;
+import static org.wildfly.plugin.core.Constants.STANDALONE_XML;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -23,9 +30,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
 import javax.inject.Inject;
+
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -34,17 +44,10 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.jboss.as.controller.client.ModelControllerClient;
 import org.jboss.galleon.util.IoUtils;
-import org.wildfly.plugin.cli.CliSession;
 import org.wildfly.plugin.cli.CommandConfiguration;
 import org.wildfly.plugin.cli.CommandExecutor;
 import org.wildfly.plugin.common.MavenModelControllerClientConfiguration;
 import org.wildfly.plugin.common.PropertyNames;
-import static org.wildfly.plugin.core.Constants.CLI_ECHO_COMMAND_ARG;
-import static org.wildfly.plugin.core.Constants.CLI_RESOLVE_PARAMETERS_VALUES;
-import static org.wildfly.plugin.core.Constants.DOMAIN;
-import static org.wildfly.plugin.core.Constants.DOMAIN_XML;
-import static org.wildfly.plugin.core.Constants.STANDALONE;
-import static org.wildfly.plugin.core.Constants.STANDALONE_XML;
 import org.wildfly.plugin.deployment.PackageType;
 
 /**
@@ -69,12 +72,6 @@ public class PackageServerMojo extends AbstractProvisionServerMojo {
      */
     @Parameter(alias = "extra-server-content-dirs")
     List<String> extraServerContentDirs = Collections.emptyList();
-
-    /**
-     * The CLI sessions to execute.
-     */
-    @Parameter(alias = "cli-sessions")
-    private List<CliSession> cliSessions = new ArrayList<>();
 
     /**
      * The file name of the application to be deployed.
@@ -166,29 +163,28 @@ public class PackageServerMojo extends AbstractProvisionServerMojo {
         }
         // CLI execution
          try {
-             if (!cliSessions.isEmpty()) {
-                 getLog().info("Excuting CLI commands and scripts");
-                 for (CliSession session : cliSessions) {
-                     List<File> wrappedScripts = wrapOfflineScripts(session.getScripts());
+             if (!packaging.getPackagingScripts().isEmpty()) {
+                 getLog().info("Executing packaging scripts using CLI");
+                 for (PackagingScript packagingScript : packaging.getPackagingScripts()) {
+                     Path wrappedScript = wrapScript(packagingScript.getFile());
                      try {
                          final CommandConfiguration cmdConfig = CommandConfiguration.of(this::createClient, this::getClientConfiguration)
-                                 .addCommands(wrapOfflineCommands(session.getCommands()))
-                                 .addScripts(wrappedScripts)
+                                 .addScripts(Arrays.asList(wrappedScript.toFile()))
                                  .addCLIArguments(CLI_ECHO_COMMAND_ARG)
                                  .setJBossHome(jbossHome)
                                  .setFork(true)
                                  .setStdout(stdout)
-                                 .addPropertiesFiles(resolveFiles(session.getPropertiesFiles()))
-                                 .addJvmOptions(session.getJavaOpts())
+                                 .addJvmOptions(packagingScript.getJavaOpts())
                                  .setOffline(true);
-                         if (session.getResolveExpression()) {
+                         if (packagingScript.getPropertiesFile() != null) {
+                             cmdConfig.addPropertiesFiles(Arrays.asList(resolvePath(project, packagingScript.getPropertiesFile().toPath()).toFile()));
+                         }
+                         if (packagingScript.isResolveExpressions()) {
                             cmdConfig.addCLIArguments(CLI_RESOLVE_PARAMETERS_VALUES);
                          }
                          commandExecutor.execute(cmdConfig);
                      } finally {
-                         for (File f : wrappedScripts) {
-                             Files.delete(f.toPath());
-                         }
+                         Files.delete(wrappedScript);
                      }
                  }
              }

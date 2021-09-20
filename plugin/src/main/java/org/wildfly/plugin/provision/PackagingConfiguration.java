@@ -51,11 +51,18 @@ public class PackagingConfiguration extends Configuration {
     @Parameter(required = false, alias = "galleon-options")
     Map<String, String> galleonOptions = Collections.emptyMap();
 
+    @Parameter(required = false, alias = "packaging-scripts")
+    List<PackagingScript> packagingScripts = Collections.emptyList();
+
     public List<FeaturePack> getFeaturePacks() {
         return featurePacks;
     }
 
     public Map<String, String> getGalleonOptions() {
         return galleonOptions;
+    }
+
+    public List<PackagingScript> getPackagingScripts() {
+        return packagingScripts;
     }
 }

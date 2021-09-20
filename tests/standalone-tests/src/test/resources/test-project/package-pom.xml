@@ -45,17 +45,12 @@
                         <galleon-options>
                             <jboss-fork-embedded>true</jboss-fork-embedded>
                         </galleon-options>
+                        <packaging-scripts>
+                            <packaging-script>
+                                <file>test-package.cli</file>
+                            </packaging-script>
+                        </packaging-scripts>
                     </packaging>
-                    <cli-sessions>
-                        <session>
-                            <scripts>
-                                <script>test-package.cli</script>
-                            </scripts>
-                            <commands>
-                                <command>/system-property=org.wildfly.maven.plugin-package-goal:add(value=true)</command>
-                            </commands>
-                        </session>
-                    </cli-sessions>
                     <filename>test.war</filename>
                     <extra-server-content-dirs>
                         <dir>extra-content</dir>
