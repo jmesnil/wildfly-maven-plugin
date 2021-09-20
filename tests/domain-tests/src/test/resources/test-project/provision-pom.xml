@@ -47,6 +47,7 @@
                             <dir>src/main/resources/dir2</dir>
                         </extra-server-content-dirs>
                         <record-state>false</record-state>
+                        <provision-dir>server</provision-dir>
                     </packaging>
                 </configuration>
             </plugin>

@@ -75,8 +75,9 @@ public class PackagingConfiguration extends Configuration {
 
     boolean logTime = false;
     boolean recordState = false;
+    private String provisionDir = "server";
 
-    public boolean isLogProvisioningTime() {
+    public boolean isLogTime() {
         return logTime;
     }
 
@@ -102,5 +103,9 @@ public class PackagingConfiguration extends Configuration {
 
     public File getProvisioningFile() {
         return provisioningFile;
+    }
+
+    public String getProvisionDir() {
+        return provisionDir;
     }
 }

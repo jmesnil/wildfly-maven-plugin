@@ -49,7 +49,6 @@ import org.jboss.galleon.universe.maven.repo.MavenRepoManager;
 import org.jboss.galleon.util.IoUtils;
 import org.jboss.galleon.xml.ProvisioningXmlWriter;
 import org.wildfly.plugin.common.PropertyNames;
-import org.wildfly.plugin.common.Utils;
 import org.wildfly.plugin.core.GalleonUtils;
 import org.wildfly.plugin.core.MavenRepositoriesEnricher;
 
@@ -95,12 +94,6 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
     boolean skip;
 
     /**
-     * The directory name inside the buildDir where to provision the server. By default the server is provisioned into the 'server' directory.
-     */
-    @Parameter(alias="provision-directory-name", property = PropertyNames.WILDFLY_PROVISION_DIRECTORY_NAME, defaultValue = Utils.WILDFLY_DEFAULT_DIR)
-    private String provisionDirectoryName;
-
-    /**
      * A list of feature-pack configurations to install, can be combined with
      * layers.
      */
@@ -127,7 +120,7 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
         artifactResolver = offline ? new MavenArtifactRepositoryManager(repoSystem, repoSession)
                 : new MavenArtifactRepositoryManager(repoSystem, repoSession, repositories);
 
-        wildflyDir = targetDir.toPath().resolve(provisionDirectoryName);
+        wildflyDir = targetDir.toPath().resolve(packaging.getProvisionDir());
         IoUtils.recursiveDelete(wildflyDir);
 
         try {
@@ -145,7 +138,7 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
         try (ProvisioningManager pm = ProvisioningManager.builder().addArtifactResolver(artifactResolver)
                 .setInstallationHome(home)
                 .setMessageWriter(new MvnMessageWriter(getLog()))
-                .setLogTime(packaging.isLogProvisioningTime())
+                .setLogTime(packaging.isLogTime())
                 .setRecordState(packaging.isRecordState())
                 .build()) {
             getLog().info("Provisioning server in " + home);
