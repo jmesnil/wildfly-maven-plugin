@@ -30,11 +30,13 @@
                 <groupId>org.wildfly.plugins</groupId>
                 <artifactId>wildfly-maven-plugin</artifactId>
                 <configuration>
-                    <feature-packs>
-                        <feature-pack>
-                            <location>wildfly@maven(org.jboss.universe:community-universe)</location>
-                        </feature-pack>
-                    </feature-packs>
+                    <packaging>
+                        <feature-packs>
+                            <feature-pack>
+                                <location>wildfly@maven(org.jboss.universe:community-universe)</location>
+                            </feature-pack>
+                        </feature-packs>
+                    </packaging>
                     <server-configuration>
                             <layers>
                                 <layer>jaxrs-server</layer>

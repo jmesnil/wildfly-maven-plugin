@@ -42,7 +42,6 @@ import org.jboss.galleon.ProvisioningException;
 import org.jboss.galleon.ProvisioningManager;
 import org.jboss.galleon.config.ProvisioningConfig;
 import org.jboss.galleon.maven.plugin.util.Configuration;
-import org.jboss.galleon.maven.plugin.util.FeaturePack;
 import org.jboss.galleon.maven.plugin.util.MavenArtifactRepositoryManager;
 import org.jboss.galleon.maven.plugin.util.MvnMessageWriter;
 import org.jboss.galleon.universe.maven.repo.MavenRepoManager;
@@ -131,8 +130,8 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
      * A list of feature-pack configurations to install, can be combined with
      * layers.
      */
-    @Parameter(required = false, alias= "feature-packs")
-    List<FeaturePack> featurePacks = Collections.emptyList();
+    @Parameter(required = false)
+    PackagingConfiguration packaging = new PackagingConfiguration();
 
     /**
      * A server configuration that contains included and excluded layers.
@@ -193,7 +192,7 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
             ProvisioningConfig config = null;
             Path resolvedProvisioningFile = resolvePath(project, provisioningFile.toPath());
             boolean provisioningFileExists = Files.exists(resolvedProvisioningFile);
-            if (featurePacks.isEmpty()) {
+            if (packaging.getFeaturePacks().isEmpty()) {
                 if (provisioningFileExists) {
                     getLog().info("Provisioning server using " + resolvedProvisioningFile + " file.");
                     config = GalleonUtils.buildConfig(resolvedProvisioningFile);
@@ -209,7 +208,7 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
                     serverConfigurations = new ArrayList<>();
                     serverConfigurations.add(serverConfiguration);
                 }
-                config = GalleonUtils.buildConfig(pm, featurePacks, serverConfigurations, pluginOptions);
+                config = GalleonUtils.buildConfig(pm, packaging.getFeaturePacks(), serverConfigurations, pluginOptions);
             }
             pm.provision(config);
             if (!Files.exists(home)) {

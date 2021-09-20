@@ -30,13 +30,15 @@
                 <groupId>org.wildfly.plugins</groupId>
                 <artifactId>wildfly-maven-plugin</artifactId>
                 <configuration>
-                    <feature-packs>
-                        <feature-pack>
-                            <location>wildfly@maven(org.jboss.universe:community-universe)</location>
-                            <inherit-configs>true</inherit-configs>
-                            <inherit-packages>true</inherit-packages>
-                        </feature-pack>
-                    </feature-packs>
+                    <packaging>
+                        <feature-packs>
+                            <feature-pack>
+                                <location>wildfly@maven(org.jboss.universe:community-universe)</location>
+                                <inherit-configs>true</inherit-configs>
+                                <inherit-packages>true</inherit-packages>
+                            </feature-pack>
+                        </feature-packs>
+                    </packaging>
                     <server-groups>
                         <server-group>other-server-group</server-group>
                     </server-groups>
