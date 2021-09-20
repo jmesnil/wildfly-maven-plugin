@@ -134,12 +134,6 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
     PackagingConfiguration packaging = new PackagingConfiguration();
 
     /**
-     * A server configuration that contains included and excluded layers.
-     */
-    @Parameter(required = false, alias = "server-configuration")
-    private Configuration serverConfiguration;
-
-    /**
      * The path to the {@code provisioning.xml} file to use. Note that this cannot be used with the {@code feature-packs}
      * or {@code configurations}.
      * If the provisioning file is not absolute, it has to be relative to the project base directory.
@@ -203,10 +197,9 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
                 if (provisioningFileExists) {
                     getLog().warn("Galleon provisioning file " + provisioningFile + " is ignored, plugin configuration is used.");
                 }
-                List<Configuration> serverConfigurations = Collections.emptyList();
-                if (serverConfiguration != null) {
-                    serverConfigurations = new ArrayList<>();
-                    serverConfigurations.add(serverConfiguration);
+                List<Configuration> serverConfigurations = new ArrayList<>();
+                if (packaging.getServerConfiguration() != null) {
+                    serverConfigurations.add(packaging.getServerConfiguration());
                 }
                 config = GalleonUtils.buildConfig(pm, packaging.getFeaturePacks(), serverConfigurations, pluginOptions);
             }

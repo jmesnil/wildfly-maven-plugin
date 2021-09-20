@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.maven.plugins.annotations.Parameter;
+import org.jboss.galleon.maven.plugin.util.Configuration;
 import org.jboss.galleon.maven.plugin.util.FeaturePack;
 
 public class PackagingConfiguration {
@@ -35,7 +36,17 @@ public class PackagingConfiguration {
     @Parameter(required = false, alias= "feature-packs")
     List<FeaturePack> featurePacks = Collections.emptyList();
 
+    /**
+     * A server configuration that contains included and excluded layers.
+     */
+    @Parameter(required = false, alias = "server-configuration")
+    private Configuration serverConfiguration;
+
     public List<FeaturePack> getFeaturePacks() {
         return featurePacks;
+    }
+
+    public Configuration getServerConfiguration() {
+        return serverConfiguration;
     }
 }

@@ -36,12 +36,12 @@
                                 <location>wildfly@maven(org.jboss.universe:community-universe)</location>
                             </feature-pack>
                         </feature-packs>
-                    </packaging>
-                    <server-configuration>
+                        <server-configuration>
                             <layers>
                                 <layer>jaxrs-server</layer>
                             </layers>
-                    </server-configuration>
+                        </server-configuration>
+                    </packaging>
                     <pluginOptions>
                         <jboss-fork-embedded>true</jboss-fork-embedded>
                     </pluginOptions>
