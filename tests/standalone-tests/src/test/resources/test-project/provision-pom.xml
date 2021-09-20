@@ -39,10 +39,10 @@
                         <layers>
                             <layer>jaxrs-server</layer>
                         </layers>
+                        <galleon-options>
+                            <jboss-fork-embedded>true</jboss-fork-embedded>
+                        </galleon-options>
                     </packaging>
-                    <pluginOptions>
-                        <jboss-fork-embedded>true</jboss-fork-embedded>
-                    </pluginOptions>
                     <record-state>false</record-state>
                 </configuration>
             </plugin>

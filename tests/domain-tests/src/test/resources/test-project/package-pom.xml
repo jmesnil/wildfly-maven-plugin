@@ -38,6 +38,9 @@
                                 <inherit-packages>true</inherit-packages>
                             </feature-pack>
                         </feature-packs>
+                        <galleon-options>
+                            <jboss-fork-embedded>true</jboss-fork-embedded>
+                        </galleon-options>
                     </packaging>
                     <server-groups>
                         <server-group>other-server-group</server-group>
@@ -52,9 +55,6 @@
                             </commands>
                         </session>
                     </cli-sessions>
-                    <pluginOptions>
-                        <jboss-fork-embedded>true</jboss-fork-embedded>
-                    </pluginOptions>
                     <filename>test.war</filename>
                     <record-state>true</record-state>
                 </configuration>

@@ -23,6 +23,7 @@ package org.wildfly.plugin.provision;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.maven.plugins.annotations.Parameter;
 import org.jboss.galleon.maven.plugin.util.Configuration;
@@ -36,7 +37,25 @@ public class PackagingConfiguration extends Configuration {
     @Parameter(required = false, alias= "feature-packs")
     List<FeaturePack> featurePacks = Collections.emptyList();
 
+    /**
+     * Arbitrary Galleon options used when provisioning the server. In case you
+     * are building a large amount of server in the same maven session, it
+     * is strongly advised to set 'jboss-fork-embedded' option to 'true' in
+     * order to fork Galleon provisioning and CLI scripts execution in dedicated
+     * processes. For example:
+     * <br/>
+     * &lt;plugin-options&gt;<br/>
+     * &lt;jboss-fork-embedded&gt;true&lt;/jboss-fork-embedded&gt;<br/>
+     * &lt;/plugin-options&gt;
+     */
+    @Parameter(required = false, alias = "galleon-options")
+    Map<String, String> galleonOptions = Collections.emptyMap();
+
     public List<FeaturePack> getFeaturePacks() {
         return featurePacks;
+    }
+
+    public Map<String, String> getGalleonOptions() {
+        return galleonOptions;
     }
 }

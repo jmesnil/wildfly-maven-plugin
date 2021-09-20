@@ -25,9 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import javax.xml.stream.XMLStreamException;
 
@@ -80,20 +78,6 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
 
     @Parameter(defaultValue = "${session}", readonly = true, required = true)
     MavenSession session;
-
-    /**
-     * Arbitrary Galleon options used when provisioning the server. In case you
-     * are building a large amount of server in the same maven session, it
-     * is strongly advised to set 'jboss-fork-embedded' option to 'true' in
-     * order to fork Galleon provisioning and CLI scripts execution in dedicated
-     * processes. For example:
-     * <br/>
-     * &lt;plugin-options&gt;<br/>
-     * &lt;jboss-fork-embedded&gt;true&lt;/jboss-fork-embedded&gt;<br/>
-     * &lt;/plugin-options&gt;
-     */
-    @Parameter(required = false, alias = "plugin-options")
-    Map<String, String> pluginOptions = Collections.emptyMap();
 
     /**
      * Whether to use offline mode when the plugin resolves an artifact. In
@@ -199,7 +183,7 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
                 if (provisioningFileExists) {
                     getLog().warn("Galleon provisioning file " + provisioningFile + " is ignored, plugin configuration is used.");
                 }
-                config = GalleonUtils.buildConfig(pm, packaging.getFeaturePacks(), Arrays.asList(packaging), pluginOptions);
+                config = GalleonUtils.buildConfig(pm, packaging.getFeaturePacks(), Arrays.asList(packaging), packaging.getGalleonOptions());
             }
             pm.provision(config);
             if (!Files.exists(home)) {

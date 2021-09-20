@@ -42,6 +42,9 @@
                         <excluded-layers>
                             <layer>deployment-scanner</layer>
                         </excluded-layers>
+                        <galleon-options>
+                            <jboss-fork-embedded>true</jboss-fork-embedded>
+                        </galleon-options>
                     </packaging>
                     <cli-sessions>
                         <session>
@@ -53,9 +56,6 @@
                             </commands>
                         </session>
                     </cli-sessions>
-                    <pluginOptions>
-                        <jboss-fork-embedded>true</jboss-fork-embedded>
-                    </pluginOptions>
                     <filename>test.war</filename>
                     <extra-server-content-dirs>
                         <dir>extra-content</dir>
