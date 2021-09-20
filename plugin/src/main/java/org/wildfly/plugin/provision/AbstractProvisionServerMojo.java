@@ -88,18 +88,6 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
     boolean offline;
 
     /**
-     * Whether to log provisioning time at the end
-     */
-    @Parameter(alias = "log-time", defaultValue = "false")
-    boolean logTime;
-
-    /**
-     * Whether to record provisioned state in .galleon directory.
-     */
-    @Parameter(alias = "record-state", defaultValue = "false")
-    boolean recordState;
-
-    /**
      * Set to {@code true} if you want the goal to be skipped, otherwise
      * {@code false}.
      */
@@ -118,14 +106,6 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
      */
     @Parameter(required = false)
     PackagingConfiguration packaging = new PackagingConfiguration();
-
-    /**
-     * The path to the {@code provisioning.xml} file to use. Note that this cannot be used with the {@code feature-packs}
-     * or {@code configurations}.
-     * If the provisioning file is not absolute, it has to be relative to the project base directory.
-     */
-    @Parameter(alias = "provisioning-file", property = PropertyNames.WILDFLY_PROVISION_PROVISIONING_FILE, defaultValue = "${project.basedir}/galleon/provisioning.xml")
-    private File provisioningFile;
 
     /**
      * The target directory the application to be deployed is located.
@@ -165,12 +145,12 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
         try (ProvisioningManager pm = ProvisioningManager.builder().addArtifactResolver(artifactResolver)
                 .setInstallationHome(home)
                 .setMessageWriter(new MvnMessageWriter(getLog()))
-                .setLogTime(logTime)
-                .setRecordState(recordState)
+                .setLogTime(packaging.isLogProvisioningTime())
+                .setRecordState(packaging.isRecordState())
                 .build()) {
             getLog().info("Provisioning server in " + home);
             ProvisioningConfig config = null;
-            Path resolvedProvisioningFile = resolvePath(project, provisioningFile.toPath());
+            Path resolvedProvisioningFile = resolvePath(project, packaging.getProvisioningFile().toPath());
             boolean provisioningFileExists = Files.exists(resolvedProvisioningFile);
             if (packaging.getFeaturePacks().isEmpty()) {
                 if (provisioningFileExists) {
@@ -181,7 +161,7 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
                 }
             } else {
                 if (provisioningFileExists) {
-                    getLog().warn("Galleon provisioning file " + provisioningFile + " is ignored, plugin configuration is used.");
+                    getLog().warn("Galleon provisioning file " + packaging.getProvisioningFile() + " is ignored, plugin configuration is used.");
                 }
                 config = GalleonUtils.buildConfig(pm, packaging.getFeaturePacks(), Arrays.asList(packaging), packaging.getGalleonOptions());
             }
@@ -190,7 +170,7 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
                 getLog().error("Invalid galleon provisioning, no server provisioned in " + home);
                 throw new MojoExecutionException("Invalid plugin configuration, no server provisioned.");
             }
-            if (!recordState) {
+            if (!packaging.isRecordState()) {
                 Path file = home.resolve(PLUGIN_PROVISIONING_FILE);
                 try (FileWriter writer = new FileWriter(file.toFile())) {
                     ProvisioningXmlWriter.getInstance().write(config, writer);

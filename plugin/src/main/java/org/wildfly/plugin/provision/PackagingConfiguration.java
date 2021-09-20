@@ -21,6 +21,7 @@
  */
 package org.wildfly.plugin.provision;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -28,9 +29,17 @@ import java.util.Map;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.jboss.galleon.maven.plugin.util.Configuration;
 import org.jboss.galleon.maven.plugin.util.FeaturePack;
+import org.wildfly.plugin.common.PropertyNames;
 
 public class PackagingConfiguration extends Configuration {
 
+    /**
+     * The path to the {@code provisioning.xml} file to use. Note that this cannot be used with the {@code feature-packs}
+     * or {@code configurations}.
+     * If the provisioning file is not absolute, it has to be relative to the project base directory.
+     */
+    @Parameter(alias = "provisioning-file", property = PropertyNames.WILDFLY_PROVISION_PROVISIONING_FILE, defaultValue = "${project.basedir}/galleon/provisioning.xml")
+    private File provisioningFile = new File("${project.basedir}/galleon/provisioning.xml");
 
     /**
      * A list of feature-pack configurations to install, can be combined with
@@ -64,6 +73,17 @@ public class PackagingConfiguration extends Configuration {
     @Parameter(alias = "extra-server-content-dirs")
     List<String> extraServerContentDirs = Collections.emptyList();
 
+    boolean logTime = false;
+    boolean recordState = false;
+
+    public boolean isLogProvisioningTime() {
+        return logTime;
+    }
+
+    public boolean isRecordState() {
+        return recordState;
+    }
+
     public List<FeaturePack> getFeaturePacks() {
         return featurePacks;
     }
@@ -78,5 +98,9 @@ public class PackagingConfiguration extends Configuration {
 
     public List<String> getExtraServerContentDirs() {
         return extraServerContentDirs;
+    }
+
+    public File getProvisioningFile() {
+        return provisioningFile;
     }
 }

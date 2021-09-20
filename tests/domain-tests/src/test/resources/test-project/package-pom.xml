@@ -50,12 +50,12 @@
                                 </java-opts>
                             </packaging-script>
                         </packaging-scripts>
+                        <record-state>true</record-state>
                     </packaging>
                     <server-groups>
                         <server-group>other-server-group</server-group>
                     </server-groups>
                     <filename>test.war</filename>
-                    <record-state>true</record-state>
                 </configuration>
             </plugin>
         </plugins>

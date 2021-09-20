@@ -42,8 +42,8 @@
                         <galleon-options>
                             <jboss-fork-embedded>true</jboss-fork-embedded>
                         </galleon-options>
+                        <record-state>false</record-state>
                     </packaging>
-                    <record-state>false</record-state>
                 </configuration>
             </plugin>
         </plugins>

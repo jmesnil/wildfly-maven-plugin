@@ -53,9 +53,9 @@
                         <extra-server-content-dirs>
                             <dir>extra-content</dir>
                         </extra-server-content-dirs>
+                        <record-state>true</record-state>
                     </packaging>
                     <filename>test.war</filename>
-                    <record-state>true</record-state>
                 </configuration>
             </plugin>
         </plugins>
