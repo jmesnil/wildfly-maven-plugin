@@ -31,6 +31,7 @@
                 <artifactId>wildfly-maven-plugin</artifactId>
                 <configuration>
                     <packaging>
+                        <model>domain</model>
                         <feature-packs>
                             <feature-pack>
                                 <location>wildfly@maven(org.jboss.universe:community-universe)</location>

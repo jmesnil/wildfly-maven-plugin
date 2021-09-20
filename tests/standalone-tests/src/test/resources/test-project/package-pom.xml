@@ -36,14 +36,12 @@
                                 <location>wildfly@maven(org.jboss.universe:community-universe)</location>
                             </feature-pack>
                         </feature-packs>
-                        <server-configuration>
-                            <layers>
-                                <layer>jaxrs-server</layer>
-                            </layers>
-                            <excluded-layers>
-                                <layer>deployment-scanner</layer>
-                            </excluded-layers>
-                        </server-configuration>
+                        <layers>
+                            <layer>jaxrs-server</layer>
+                        </layers>
+                        <excluded-layers>
+                            <layer>deployment-scanner</layer>
+                        </excluded-layers>
                     </packaging>
                     <cli-sessions>
                         <session>

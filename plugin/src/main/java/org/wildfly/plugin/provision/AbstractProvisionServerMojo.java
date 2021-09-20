@@ -16,17 +16,21 @@
  */
 package org.wildfly.plugin.provision;
 
+import static org.wildfly.plugin.core.Constants.PLUGIN_PROVISIONING_FILE;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
 import javax.xml.stream.XMLStreamException;
+
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -41,7 +45,6 @@ import org.eclipse.aether.repository.RemoteRepository;
 import org.jboss.galleon.ProvisioningException;
 import org.jboss.galleon.ProvisioningManager;
 import org.jboss.galleon.config.ProvisioningConfig;
-import org.jboss.galleon.maven.plugin.util.Configuration;
 import org.jboss.galleon.maven.plugin.util.MavenArtifactRepositoryManager;
 import org.jboss.galleon.maven.plugin.util.MvnMessageWriter;
 import org.jboss.galleon.universe.maven.repo.MavenRepoManager;
@@ -50,7 +53,6 @@ import org.jboss.galleon.xml.ProvisioningXmlWriter;
 import org.wildfly.plugin.common.PropertyNames;
 import org.wildfly.plugin.common.Utils;
 import org.wildfly.plugin.core.GalleonUtils;
-import static org.wildfly.plugin.core.Constants.PLUGIN_PROVISIONING_FILE;
 import org.wildfly.plugin.core.MavenRepositoriesEnricher;
 
 
@@ -197,11 +199,7 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
                 if (provisioningFileExists) {
                     getLog().warn("Galleon provisioning file " + provisioningFile + " is ignored, plugin configuration is used.");
                 }
-                List<Configuration> serverConfigurations = new ArrayList<>();
-                if (packaging.getServerConfiguration() != null) {
-                    serverConfigurations.add(packaging.getServerConfiguration());
-                }
-                config = GalleonUtils.buildConfig(pm, packaging.getFeaturePacks(), serverConfigurations, pluginOptions);
+                config = GalleonUtils.buildConfig(pm, packaging.getFeaturePacks(), Arrays.asList(packaging), pluginOptions);
             }
             pm.provision(config);
             if (!Files.exists(home)) {
