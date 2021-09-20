@@ -30,6 +30,8 @@ import org.jboss.galleon.maven.plugin.util.Configuration;
 import org.jboss.galleon.maven.plugin.util.FeaturePack;
 
 public class PackagingConfiguration extends Configuration {
+
+
     /**
      * A list of feature-pack configurations to install, can be combined with
      * layers.
@@ -54,6 +56,14 @@ public class PackagingConfiguration extends Configuration {
     @Parameter(required = false, alias = "packaging-scripts")
     List<PackagingScript> packagingScripts = Collections.emptyList();
 
+    /**
+     * A list of directories to copy content to the provisioned server. If a
+     * directory is not absolute, it has to be relative to the project base
+     * directory.
+     */
+    @Parameter(alias = "extra-server-content-dirs")
+    List<String> extraServerContentDirs = Collections.emptyList();
+
     public List<FeaturePack> getFeaturePacks() {
         return featurePacks;
     }
@@ -64,5 +74,9 @@ public class PackagingConfiguration extends Configuration {
 
     public List<PackagingScript> getPackagingScripts() {
         return packagingScripts;
+    }
+
+    public List<String> getExtraServerContentDirs() {
+        return extraServerContentDirs;
     }
 }

@@ -31,7 +31,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -64,14 +63,6 @@ public class PackageServerMojo extends AbstractProvisionServerMojo {
      */
     @Parameter(alias = "server-groups", property = PropertyNames.SERVER_GROUPS)
     private List<String> serverGroups;
-
-    /**
-     * A list of directories to copy content to the provisioned server. If a
-     * directory is not absolute, it has to be relative to the project base
-     * directory.
-     */
-    @Parameter(alias = "extra-server-content-dirs")
-    List<String> extraServerContentDirs = Collections.emptyList();
 
     /**
      * The file name of the application to be deployed.
@@ -140,7 +131,7 @@ public class PackageServerMojo extends AbstractProvisionServerMojo {
     @Override
     protected void serverProvisioned(Path jbossHome) throws MojoExecutionException, MojoFailureException {
         try {
-            if (!extraServerContentDirs.isEmpty()) {
+            if (!packaging.getExtraServerContentDirs().isEmpty()) {
                 getLog().info("Copying extra content to server");
                 copyExtraContent(jbossHome);
             }
@@ -273,7 +264,7 @@ public class PackageServerMojo extends AbstractProvisionServerMojo {
     }
 
     public void copyExtraContent(Path target) throws MojoExecutionException, IOException {
-        for (String path : extraServerContentDirs) {
+        for (String path : packaging.getExtraServerContentDirs()) {
             Path extraContent = Paths.get(path);
             extraContent = resolvePath(project, extraContent);
             if (Files.notExists(extraContent)) {

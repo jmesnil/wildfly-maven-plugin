@@ -42,6 +42,10 @@
                         <galleon-options>
                             <jboss-fork-embedded>true</jboss-fork-embedded>
                         </galleon-options>
+                        <extra-server-content-dirs>
+                            <dir>src/main/resources/dir1</dir>
+                            <dir>src/main/resources/dir2</dir>
+                        </extra-server-content-dirs>
                     </packaging>
                     <record-state>false</record-state>
                 </configuration>
