@@ -1,0 +1,15 @@
+name: WildFly Datasources & JDBC Drivers
+description: |-
+  This channel provides a stream for WildFly Datasources & JDBC Drivers.
+
+  The streams for the JDBC drivers are using the latest micro versions
+  from the version released by the org.wildfly:wildfly-datasources-galleon-pack
+  feature pack.
+streams:
+  - groupId: org.wildfly
+    artifactId: wildfly-datasources-galleon-pack
+    versionPattern: '2\.\d+\.\d+\.Final' # latest 2.x Final release
+  - # JDBC Driver for PostgreSQL
+    groupId: org.postgresql
+    artifactId: postgresql
+    versionPattern: '42\.2\.\d+' # latest 42.x release

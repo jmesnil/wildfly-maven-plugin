@@ -1,0 +1,12 @@
+Updating a server installation
+==================
+
+* In order to update Galleon feature-pack we can benefit of our automatic upgrade based on channel.
+* By re-provisioning a server, we will get the latest artifacts (both feature-packs and module artifacts.) 
+* No more product-universe. All EAP feature-packs must have their producer changed to groupId:artifactId
+* Must update the pom.xml and channel.yaml with your versions of rebuilt XP, EAP and eap-datasources-galleon-pack.
+* Update pom.xml to reference your channel.yaml (local to the example directory).
+* POSTGRESQL_DRIVER_VERSION=42.3.1 mvn clean package -Pinstall
+* POSTGRESQL_DRIVER_VERSION=42.3.1 mvn package -Pupdate
+
+==> Server will get updated to latest versions contained in the channel.
