@@ -1,0 +1,31 @@
+Provision a server with a channel
+==================
+
+The application will use the latest version of the org.wildfly:wildfly-datasources-galleon-pack to provision the postgresql-datasource.
+The version of the JDBC driver for PostGreSQL that is provisioned will be the latest 42.x available.
+The datasource-channel.yaml defines the versioning constraints to fetch these two artifacts from Maven.
+
+# Java application
+
+To build the application, run `mvn package`
+
+The application can be started with `./target/server/bin/standalone.sh`
+
+Its HTTP endpoint can be reached on `http://localhost:8080/`
+
+```
+$ curl http://localhost:8080
+Hello from WildFly!
+```
+
+# Docker Image
+
+To build a Docker image that can run the application with OpenJDK11, run `mvn package -Pdocker`
+
+The application image can be run with `docker run -p8080:8080 channel-example
+Its HTTP endpoint can be reached on `http://localhost:8080/`
+
+```
+$ curl http://localhost:8080
+Hello from WildFly!
+```
