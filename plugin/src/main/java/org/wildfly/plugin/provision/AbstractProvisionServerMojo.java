@@ -19,6 +19,7 @@ package org.wildfly.plugin.provision;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -174,6 +175,9 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
     @Parameter(alias = "layers-configuration-file-name", property = PropertyNames.WILDFLY_LAYERS_CONFIGURATION_FILE_NAME, defaultValue = STANDALONE_XML)
     String layersConfigurationFileName;
 
+    @Parameter(alias = "channels-config", required = false)
+    ChannelsConfig channelsConfig;
+
     private Path wildflyDir;
 
     protected MavenRepoManager artifactResolver;
@@ -184,6 +188,7 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
             getLog().debug(String.format("Skipping " + getGoal() + " of %s:%s", project.getGroupId(), project.getArtifactId()));
             return;
         }
+<<<<<<< HEAD
         Path targetPath = Paths.get(project.getBuild().getDirectory());
         wildflyDir = targetPath.resolve(provisioningDir).normalize();
         if (!overwriteProvisionedServer && Files.exists(wildflyDir)) {
@@ -192,8 +197,16 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
             return;
         }
         enrichRepositories();
-        artifactResolver = offlineProvisioning ? new MavenArtifactRepositoryManager(repoSystem, repoSession)
-                : new MavenArtifactRepositoryManager(repoSystem, repoSession, repositories);
+        if (channelsConfig == null) {
+            artifactResolver = offlineProvisioning ? new MavenArtifactRepositoryManager(repoSystem, repoSession)
+                    : new MavenArtifactRepositoryManager(repoSystem, repoSession, repositories);
+        } else {
+            try {
+                artifactResolver = new ChannelMavenArtifactRepositoryManager(project, channelsConfig, wildflyDir(), repoSystem, repoSession);
+            } catch (MalformedURLException ex) {
+                throw new MojoExecutionException(ex.getLocalizedMessage(), ex);
+            }
+        }
         if (!Paths.get(provisioningDir).isAbsolute() && (targetPath.equals(wildflyDir) || !wildflyDir.startsWith(targetPath))) {
             throw new  MojoExecutionException("provisioning-dir " + provisioningDir + " must be an absolute path or a child directory relative to the project build directory.");
         }
@@ -201,6 +214,9 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
         try {
             try {
                 provisionServer(wildflyDir);
+                if (artifactResolver instanceof ChannelMavenArtifactRepositoryManager) {
+                    ((ChannelMavenArtifactRepositoryManager)artifactResolver).done(wildflyDir);
+                }
             } catch (ProvisioningException | IOException | XMLStreamException ex) {
                 throw new MojoExecutionException("Provisioning failed", ex);
             }
