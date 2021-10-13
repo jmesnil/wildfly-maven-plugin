@@ -19,6 +19,7 @@ package org.wildfly.plugin.provision;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -162,6 +163,9 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
     @Parameter(defaultValue = "${project.build.directory}/", property = PropertyNames.DEPLOYMENT_TARGET_DIR)
     protected File targetDir;
 
+    @Parameter(alias = "channels-config", required = false)
+    ChannelsConfig channelsConfig;
+
     private Path wildflyDir;
 
     protected MavenRepoManager artifactResolver;
@@ -173,14 +177,25 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
             return;
         }
         MavenRepositoriesEnricher.enrich(session, project, repositories);
-        artifactResolver = offlineProvisioning ? new MavenArtifactRepositoryManager(repoSystem, repoSession)
+        if (channelsConfig == null) {
+            artifactResolver = offlineProvisioning ? new MavenArtifactRepositoryManager(repoSystem, repoSession)
                 : new MavenArtifactRepositoryManager(repoSystem, repoSession, repositories);
+        } else {
+            try {
+                artifactResolver = new ChannelMavenArtifactRepositoryManager(project, channelsConfig, targetDir.toPath(), repoSystem, repoSession);
+            } catch (MalformedURLException ex) {
+                throw new MojoExecutionException(ex.getLocalizedMessage(), ex);
+            }
+        }
 
         wildflyDir = targetDir.toPath().resolve(provisioningDir);
         IoUtils.recursiveDelete(wildflyDir);
         try {
             try {
                 provisionServer(wildflyDir);
+                if (artifactResolver instanceof ChannelMavenArtifactRepositoryManager) {
+                    ((ChannelMavenArtifactRepositoryManager)artifactResolver).done(wildflyDir);
+                }
             } catch (ProvisioningException | IOException | XMLStreamException ex) {
                 throw new MojoExecutionException("Provisioning failed", ex);
             }
