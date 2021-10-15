@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.wildfly.plugins.examples</groupId>
+    <artifactId>jaxrs</artifactId>
+    <version>1.0.0.Final</version>
+    <packaging>war</packaging>
+
+    <name>WildFly Maven Plugin- Channels provisioning</name>
+    <description>An example of how to use WildFly channels</description>
+
+    <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <failOnMissingWebXml>false</failOnMissingWebXml>
+        <plugin.fork.embedded>true</plugin.fork.embedded>
+    </properties>
+    <dependencies>
+        <dependency>
+            <groupId>jakarta.platform</groupId>
+            <artifactId>jakarta.jakartaee-api</artifactId>
+            <scope>provided</scope>
+            <version>8.0.0</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>${project.artifactId}</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.wildfly.plugins</groupId>
+                <artifactId>wildfly-maven-plugin</artifactId>
+                <version>3.0.0.Alpha1-SNAPSHOT</version>
+                <configuration>
+                    <channels-config>
+                        <urls>
+                            <url>https://raw.githubusercontent.com/jmesnil/wildfly-channel/main/examples/wildfly/24/channel.yaml</url>
+                            <url>https://raw.githubusercontent.com/jmesnil/wildfly-channel/main/examples/wildfly/datasources/channel.yaml</url>
+                        </urls>
+                    </channels-config>
+                    <feature-packs>
+                        <feature-pack>
+                            <location>org.wildfly:wildfly-galleon-pack</location>
+                        </feature-pack>
+                         <feature-pack>
+                            <location>org.wildfly:wildfly-datasources-galleon-pack</location>
+                        </feature-pack>
+                    </feature-packs>
+                    <layers>
+                        <layer>jaxrs-server</layer>
+                        <layer>postgresql-driver</layer>
+                    </layers>
+                    <runtime-name>ROOT.war</runtime-name>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>package</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
