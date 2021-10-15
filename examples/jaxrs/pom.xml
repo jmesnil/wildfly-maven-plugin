@@ -39,6 +39,7 @@
                         <urls>
                             <url>https://raw.githubusercontent.com/jmesnil/wildfly-channel/main/examples/wildfly/24/channel.yaml</url>
                             <url>https://raw.githubusercontent.com/jmesnil/wildfly-channel/main/examples/wildfly/datasources/channel.yaml</url>
+                            <url>file://${project.basedir}/integration.yaml</url>
                         </urls>
                     </channels>
                     <feature-packs>
