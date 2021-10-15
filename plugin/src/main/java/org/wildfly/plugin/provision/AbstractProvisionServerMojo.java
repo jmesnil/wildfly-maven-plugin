@@ -163,8 +163,8 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
     @Parameter(defaultValue = "${project.build.directory}/", property = PropertyNames.DEPLOYMENT_TARGET_DIR)
     protected File targetDir;
 
-    @Parameter(alias = "channels-config", required = false)
-    ChannelsConfig channelsConfig;
+    @Parameter(alias = "channels", required = false)
+    ChannelsConfig channels;
 
     private Path wildflyDir;
 
@@ -177,12 +177,12 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
             return;
         }
         MavenRepositoriesEnricher.enrich(session, project, repositories);
-        if (channelsConfig == null) {
+        if (channels == null) {
             artifactResolver = offlineProvisioning ? new MavenArtifactRepositoryManager(repoSystem, repoSession)
                 : new MavenArtifactRepositoryManager(repoSystem, repoSession, repositories);
         } else {
             try {
-                artifactResolver = new ChannelMavenArtifactRepositoryManager(project, channelsConfig, targetDir.toPath(), repoSystem, repoSession);
+                artifactResolver = new ChannelMavenArtifactRepositoryManager(project, channels, targetDir.toPath(), repoSystem, repoSession);
             } catch (MalformedURLException ex) {
                 throw new MojoExecutionException(ex.getLocalizedMessage(), ex);
             }

@@ -35,12 +35,12 @@
                 <artifactId>wildfly-maven-plugin</artifactId>
                 <version>3.0.0.Alpha1-SNAPSHOT</version>
                 <configuration>
-                    <channels-config>
+                    <channels>
                         <urls>
                             <url>https://raw.githubusercontent.com/jmesnil/wildfly-channel/main/examples/wildfly/24/channel.yaml</url>
                             <url>https://raw.githubusercontent.com/jmesnil/wildfly-channel/main/examples/wildfly/datasources/channel.yaml</url>
                         </urls>
-                    </channels-config>
+                    </channels>
                     <feature-packs>
                         <feature-pack>
                             <location>org.wildfly:wildfly-galleon-pack</location>
