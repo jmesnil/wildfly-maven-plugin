@@ -137,8 +137,6 @@ public class ChannelMavenArtifactRepositoryManager implements MavenRepoManager {
         private static RemoteRepository newRemoteRepository(MavenRepository mavenRepository) {
             return new RemoteRepository.Builder(mavenRepository.getId(), "default",
                     mavenRepository.getUrl().toExternalForm()).
-                    //setSnapshotPolicy(new RepositoryPolicy(false, "never", "warn")).
-                    //setReleasePolicy(new RepositoryPolicy(true, "daily", "warn")).
                     build();
         }
 
@@ -204,16 +202,9 @@ public class ChannelMavenArtifactRepositoryManager implements MavenRepoManager {
             result = channelSession.resolveExactMavenArtifact(artifact.getGroupId(), artifact.getArtifactId(), artifact.getExtension(), artifact.getClassifier(), artifact.getVersion());
         } else {
             result = channelSession.resolveLatestMavenArtifact(artifact.getGroupId(), artifact.getArtifactId(), artifact.getExtension(), artifact.getClassifier(), artifact.getVersion());
+            artifact.setVersion(result.getVersion());
         }
-        if (result != null) {
-            String version = result.getVersion();
-            artifact.setVersion(version);
-            if (result.getFile() != null) {
-                artifact.setPath(result.getFile().toPath());
-            } else {
-                System.out.println("NULL FOR " + artifact);
-            }
-        }
+        artifact.setPath(result.getFile().toPath());
     }
 
     public void done(Path home) throws MavenUniverseException, IOException {
