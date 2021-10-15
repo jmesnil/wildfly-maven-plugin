@@ -175,8 +175,8 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
     @Parameter(alias = "layers-configuration-file-name", property = PropertyNames.WILDFLY_LAYERS_CONFIGURATION_FILE_NAME, defaultValue = STANDALONE_XML)
     String layersConfigurationFileName;
 
-    @Parameter(alias = "channels-config", required = false)
-    ChannelsConfig channelsConfig;
+    @Parameter(alias = "channels", required = false)
+    ChannelsConfig channels;
 
     private Path wildflyDir;
 
@@ -188,7 +188,6 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
             getLog().debug(String.format("Skipping " + getGoal() + " of %s:%s", project.getGroupId(), project.getArtifactId()));
             return;
         }
-<<<<<<< HEAD
         Path targetPath = Paths.get(project.getBuild().getDirectory());
         wildflyDir = targetPath.resolve(provisioningDir).normalize();
         if (!overwriteProvisionedServer && Files.exists(wildflyDir)) {
@@ -197,12 +196,12 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
             return;
         }
         enrichRepositories();
-        if (channelsConfig == null) {
+        if (channels == null) {
             artifactResolver = offlineProvisioning ? new MavenArtifactRepositoryManager(repoSystem, repoSession)
                     : new MavenArtifactRepositoryManager(repoSystem, repoSession, repositories);
         } else {
             try {
-                artifactResolver = new ChannelMavenArtifactRepositoryManager(project, channelsConfig, wildflyDir(), repoSystem, repoSession);
+                artifactResolver = new ChannelMavenArtifactRepositoryManager(project, channels, wildflyDir, repoSystem, repoSession);
             } catch (MalformedURLException ex) {
                 throw new MojoExecutionException(ex.getLocalizedMessage(), ex);
             }
