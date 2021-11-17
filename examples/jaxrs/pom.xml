@@ -37,14 +37,19 @@
                 <configuration>
                     <channels>
                         <channel>org.wildfly.channels:wildfly-24</channel>
+                        <channel>org.wildfly.channels:wildfly-datasources</channel>
                     </channels>
                     <feature-packs>
                         <feature-pack>
                             <location>org.wildfly:wildfly-galleon-pack</location>
                         </feature-pack>
+                        <feature-pack>
+                            <location>org.wildfly:wildfly-datasources-galleon-pack</location>
+                        </feature-pack>
                     </feature-packs>
                     <layers>
                         <layer>jaxrs-server</layer>
+                        <layer>postgresql-driver</layer>
                     </layers>
                     <runtime-name>ROOT.war</runtime-name>
                 </configuration>
