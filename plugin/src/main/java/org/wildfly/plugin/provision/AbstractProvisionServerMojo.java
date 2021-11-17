@@ -182,7 +182,7 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
                 : new MavenArtifactRepositoryManager(repoSystem, repoSession, repositories);
         } else {
             try {
-                artifactResolver = new ChannelMavenArtifactRepositoryManager(project, channels, targetDir.toPath(), repoSystem, repoSession);
+                artifactResolver = new ChannelMavenArtifactRepositoryManager(project, channels, targetDir.toPath(), repoSystem, repoSession, getLog());
             } catch (MalformedURLException ex) {
                 throw new MojoExecutionException(ex.getLocalizedMessage(), ex);
             }

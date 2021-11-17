@@ -36,23 +36,17 @@
                 <version>3.0.0.Alpha1-SNAPSHOT</version>
                 <configuration>
                     <channels>
-                        <urls>
-                            <url>https://raw.githubusercontent.com/jmesnil/wildfly-channel/main/examples/wildfly/24/channel.yaml</url>
-                            <url>https://raw.githubusercontent.com/jmesnil/wildfly-channel/main/examples/wildfly/datasources/channel.yaml</url>
-                            <url>file://${project.basedir}/local-dev.yaml</url>
-                        </urls>
+                        <channels>
+                            <channel>org.wildfly.channels:wildfly-24</channel>
+                        </channels>
                     </channels>
                     <feature-packs>
                         <feature-pack>
                             <location>org.wildfly:wildfly-galleon-pack</location>
                         </feature-pack>
-                         <feature-pack>
-                            <location>org.wildfly:wildfly-datasources-galleon-pack</location>
-                        </feature-pack>
                     </feature-packs>
                     <layers>
                         <layer>jaxrs-server</layer>
-                        <layer>postgresql-driver</layer>
                     </layers>
                     <runtime-name>ROOT.war</runtime-name>
                 </configuration>
