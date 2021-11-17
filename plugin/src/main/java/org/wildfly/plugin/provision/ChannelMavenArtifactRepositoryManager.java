@@ -100,9 +100,6 @@ public class ChannelMavenArtifactRepositoryManager implements MavenRepoManager {
         public File resolveLatestVersionFromMavenMetadata(String groupId, String artifactId, String extension, String classifier) throws UnresolvedMavenArtifactException {
             requireNonNull(groupId);
             requireNonNull(artifactId);
-            System.out.println(String.format("Resolving the latest version of %s:%s from Maven Metadata",
-                    groupId, artifactId));
-
             requireNonNull(groupId);
             requireNonNull(artifactId);
 
@@ -113,9 +110,8 @@ public class ChannelMavenArtifactRepositoryManager implements MavenRepoManager {
 
             try {
                 VersionRangeResult versionRangeResult = system.resolveVersionRange(session, versionRangeRequest);
-                System.out.println("versionRangeResult = " + versionRangeResult.getVersions());
                 String latestVersion =  versionRangeResult.getHighestVersion().toString();
-                System.out.println(String.format("Latest version of %s:%s is %s",
+                System.out.println(String.format("Using version %s:%s:%s",
                         groupId, artifactId, latestVersion));
                 return resolveArtifact(groupId, artifactId, extension, classifier, latestVersion);
             } catch (VersionRangeResolutionException e) {
@@ -190,12 +186,20 @@ public class ChannelMavenArtifactRepositoryManager implements MavenRepoManager {
 
         WildFlyMavenVersionsResolver resolver = factory.create();
         for (String channel : channelsCoords) {
+            log.debug(String.format("Using channel %s", channel));
             String[] s = channel.split(":");
             String groupId = s[0];
             String artifactId = s[1];
             try {
-                File file = resolver.resolveLatestVersionFromMavenMetadata(groupId, artifactId, "yaml", null);
-                Channel channel1 = ChannelMapper.from(file.toURI().toURL());
+                final File channelFile;
+                if (s.length == 3) {
+                    // version is set
+                    String version = s[2];
+                    channelFile = resolver.resolveArtifact(groupId, artifactId, "yaml", "channel", version);
+                } else {
+                    channelFile = resolver.resolveLatestVersionFromMavenMetadata(groupId, artifactId, "yaml", "channel");
+                }
+                Channel channel1 = ChannelMapper.from(channelFile.toURI().toURL());
                 channels.add(channel1);
             } catch (UnresolvedMavenArtifactException e) {
                 e.printStackTrace();
@@ -218,9 +222,7 @@ public class ChannelMavenArtifactRepositoryManager implements MavenRepoManager {
 
     private void resolveChannel(MavenArtifact artifact) throws UnresolvedMavenArtifactException {
         org.wildfly.channel.MavenArtifact result;
-        log.info(">> artifact: " + artifact);
         result = channelSession.resolveLatestMavenArtifact(artifact.getGroupId(), artifact.getArtifactId(), artifact.getExtension(), artifact.getClassifier());
-        log.info(">> result: " + result);
         artifact.setVersion(result.getVersion());
         artifact.setPath(result.getFile().toPath());
     }

@@ -36,7 +36,7 @@
                 <version>3.0.0.Alpha1-SNAPSHOT</version>
                 <configuration>
                     <channels>
-                        <channel>org.wildfly.channels:wildfly-24</channel>
+                        <channel>org.wildfly.channels:wildfly-26</channel>
                         <channel>org.wildfly.channels:wildfly-datasources</channel>
                     </channels>
                     <feature-packs>
