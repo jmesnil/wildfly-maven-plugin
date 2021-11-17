@@ -25,22 +25,22 @@ import java.util.List;
  * @author jdenise
  */
 public class ChannelsConfig {
-    private List<String> urls = Collections.emptyList();
+    private List<String> channels = Collections.emptyList();
     private boolean disableLatestResolution;
     private File localCache;
 
     /**
      * @return the urls
      */
-    public List<String> getUrls() {
-        return urls;
+    public List<String> getChannels() {
+        return channels;
     }
 
     /**
      * @param urls the urls to set
      */
-    public void setUrls(List<String> urls) {
-        this.urls = urls;
+    public void setChannels(List<String> channels) {
+        this.channels = channels;
     }
 
     /**
