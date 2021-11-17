@@ -164,7 +164,7 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
     protected File targetDir;
 
     @Parameter(alias = "channels", required = false)
-    ChannelsConfig channels;
+    protected List<String> channels;
 
     private Path wildflyDir;
 
@@ -182,7 +182,7 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
                 : new MavenArtifactRepositoryManager(repoSystem, repoSession, repositories);
         } else {
             try {
-                artifactResolver = new ChannelMavenArtifactRepositoryManager(project, channels, targetDir.toPath(), repoSystem, repoSession, getLog());
+                artifactResolver = new ChannelMavenArtifactRepositoryManager(project, channels, targetDir.toPath(), repoSystem, repoSession, repositories, getLog());
             } catch (MalformedURLException ex) {
                 throw new MojoExecutionException(ex.getLocalizedMessage(), ex);
             }
