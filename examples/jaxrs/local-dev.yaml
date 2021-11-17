@@ -1,5 +1,0 @@
-resolveWithLocalCache: true
-streams:
-  - groupId: io.undertow
-    artifactId: '*'
-    versionPattern : '2\.2\..*'
