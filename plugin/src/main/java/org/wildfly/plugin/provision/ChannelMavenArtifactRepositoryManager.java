@@ -198,11 +198,15 @@ public class ChannelMavenArtifactRepositoryManager implements MavenRepoManager {
 
     private void resolveChannel(MavenArtifact artifact) throws MavenUniverseException, UnresolvedMavenArtifactException {
         org.wildfly.channel.MavenArtifact result;
+        String version = artifact.getVersion();
         if (disableLatest) {
             result = channelSession.resolveExactMavenArtifact(artifact.getGroupId(), artifact.getArtifactId(), artifact.getExtension(), artifact.getClassifier(), artifact.getVersion());
         } else {
             result = channelSession.resolveLatestMavenArtifact(artifact.getGroupId(), artifact.getArtifactId(), artifact.getExtension(), artifact.getClassifier(), artifact.getVersion());
             artifact.setVersion(result.getVersion());
+        }
+        if (!artifact.getVersion().equals(version)) {
+            System.out.println("Updated " + artifact +". Previous version: " + version);
         }
         artifact.setPath(result.getFile().toPath());
     }
@@ -210,7 +214,7 @@ public class ChannelMavenArtifactRepositoryManager implements MavenRepoManager {
     public void done(Path home) throws MavenUniverseException, IOException {
         List<Channel> channels = channelSession.getRecordedChannels();
         Path dir = home.resolve(".channels");
-        Files.createDirectory(dir);
+        Files.createDirectories(dir);
         Files.write(dir.resolve("channels.yaml"), ChannelMapper.toYaml(channels).getBytes());
     }
 

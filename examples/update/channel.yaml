@@ -1,0 +1,27 @@
+id: wildfly-datasources
+name: WildFly Datasources & JDBC Drivers
+description: |-
+  This channel provides a stream for WildFly Datasources & JDBC Drivers.
+
+  The streams for the JDBC drivers are using the latest micro versions
+  from the version released by the org.wildfly:wildfly-datasources-galleon-pack
+  feature pack.
+vendor:
+  name: WildFly
+  support: community
+repositories:
+  - id: maven-central
+    url: https://repo1.maven.org/maven2/
+streams:
+  - groupId: org.jboss.eap
+    artifactId: wildfly-ee-galleon-pack
+    version:  '7.4.4.GA-fake-redhat-00001'
+  - groupId: org.jboss.eap
+    artifactId: wildfly-galleon-pack
+    version:  '4.0.0.GA-fake-redhat-00001'
+  - groupId: io.undertow
+    artifactId: undertow-core
+    version:  '2.2.14.Final'
+  - groupId: org.jboss.eap
+    artifactId: eap-datasources-galleon-pack
+    version:  '7.4.4.GA-fake-redhat-00001'

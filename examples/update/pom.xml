@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.wildfly.plugins.examples</groupId>
+    <artifactId>jaxrs</artifactId>
+    <version>1.0.0.Final</version>
+    <packaging>war</packaging>
+
+    <name>WildFly Maven Plugin- JAX-RS Example</name>
+    <description>An example of how to use JAX-RS resources</description>
+
+    <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <failOnMissingWebXml>false</failOnMissingWebXml>
+        <plugin.fork.embedded>true</plugin.fork.embedded>
+    </properties>
+    <dependencies>
+        <dependency>
+            <groupId>jakarta.platform</groupId>
+            <artifactId>jakarta.jakartaee-api</artifactId>
+            <scope>provided</scope>
+            <version>8.0.0</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>${project.artifactId}</finalName>
+    </build>
+    <profiles>
+        <profile>
+            <id>install</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.wildfly.plugins</groupId>
+                        <artifactId>wildfly-maven-plugin</artifactId>
+                        <version>3.0.0.Alpha1-SNAPSHOT</version>
+                        <executions>
+                            <execution>
+                                <id>package</id>
+                                <goals>
+                                    <goal>package</goal>
+                                </goals>
+                                <configuration>
+                                    <recordProvisioningState>true</recordProvisioningState>
+                                    <feature-packs>
+                                        <!--<feature-pack>
+                                            <location>org.jboss.eap:wildfly-ee-galleon-pack:7.4.3.GA-redhat-SNAPSHOT</location>
+                                        </feature-pack>-->
+                                        <feature-pack>
+                                            <location>org.jboss.eap:wildfly-galleon-pack:4.0.0.GA-redhat-SNAPSHOT</location>
+                                        </feature-pack>
+                                        <feature-pack>
+                                            <location>org.jboss.eap:eap-datasources-galleon-pack:7.4.0.GA-redhat-SNAPSHOT</location>
+                                        </feature-pack>
+                                    </feature-packs>
+                                    <layers>
+                                        <layer>cloud-server</layer>
+                                        <layer>postgresql-driver</layer>
+                                    </layers>
+                                    <galleon-options>
+                                        <jboss-fork-embedded>true</jboss-fork-embedded>
+                                    </galleon-options>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>update</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.wildfly.plugins</groupId>
+                        <artifactId>wildfly-maven-plugin</artifactId>
+                        <version>3.0.0.Alpha1-SNAPSHOT</version>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>update</goal>
+                                </goals>
+                                <configuration>
+                                    <galleon-options>
+                                        <jboss-fork-embedded>true</jboss-fork-embedded>
+                                    </galleon-options>
+                                    <channels>
+                                        <urls>
+                                            <channel>file:///home/jdenise/workspaces/wildfly-maven-plugin-channels/examples/update/channel.yaml</channel>
+                                        </urls>
+                                    </channels>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>
