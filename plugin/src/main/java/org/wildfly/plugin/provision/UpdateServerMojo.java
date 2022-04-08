@@ -41,6 +41,7 @@ import org.eclipse.aether.repository.RemoteRepository;
 import org.jboss.galleon.ProvisioningException;
 import org.jboss.galleon.ProvisioningManager;
 import org.jboss.galleon.maven.plugin.util.MvnMessageWriter;
+import org.wildfly.channel.UnresolvedMavenArtifactException;
 import org.wildfly.plugin.common.PropertyNames;
 import org.wildfly.plugin.common.Utils;
 import org.wildfly.plugin.core.MavenRepositoriesEnricher;
@@ -84,7 +85,8 @@ public class UpdateServerMojo extends AbstractMojo {
     protected File targetDir;
 
     @Parameter(alias = "channels", required = true)
-    ChannelsConfig channels;
+    List<ChannelCoordinate> channels;
+
     @Parameter(required = false, alias = "galleon-options")
     Map<String, String> galleonOptions = Collections.emptyMap();
 
@@ -96,8 +98,8 @@ public class UpdateServerMojo extends AbstractMojo {
     public void execute() throws MojoExecutionException, MojoFailureException {
         MavenRepositoriesEnricher.enrich(session, project, repositories);
         try {
-            channelsArtifactResolver = new ChannelMavenArtifactRepositoryManager(project, channels, targetDir.toPath(), repoSystem, repoSession);
-        } catch (MalformedURLException ex) {
+            channelsArtifactResolver = new ChannelMavenArtifactRepositoryManager(channels, repoSystem, repoSession);
+        } catch (MalformedURLException | UnresolvedMavenArtifactException ex) {
             throw new MojoExecutionException(ex.getLocalizedMessage(), ex);
         }
         wildflyDir = targetDir.toPath().resolve(provisioningDir);
