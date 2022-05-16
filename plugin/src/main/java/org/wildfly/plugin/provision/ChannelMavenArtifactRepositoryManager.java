@@ -21,35 +21,18 @@
  */
 package org.wildfly.plugin.provision;
 
-import static java.util.Collections.emptySet;
-import static java.util.Objects.requireNonNull;
-
-import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
-import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.repository.RemoteRepository;
-import org.eclipse.aether.resolution.ArtifactRequest;
-import org.eclipse.aether.resolution.ArtifactResolutionException;
-import org.eclipse.aether.resolution.ArtifactResult;
-import org.eclipse.aether.resolution.VersionRangeRequest;
-import org.eclipse.aether.resolution.VersionRangeResolutionException;
-import org.eclipse.aether.resolution.VersionRangeResult;
-import org.eclipse.aether.version.Version;
 import org.jboss.galleon.universe.maven.MavenArtifact;
 import org.jboss.galleon.universe.maven.MavenUniverseException;
 import org.jboss.galleon.universe.maven.repo.MavenRepoManager;
@@ -57,141 +40,33 @@ import org.wildfly.channel.Channel;
 import org.wildfly.channel.ChannelMapper;
 import org.wildfly.channel.ChannelSession;
 import org.wildfly.channel.UnresolvedMavenArtifactException;
-import org.wildfly.channel.spi.MavenVersionsResolver;
-import org.wildfly.channel.version.VersionMatcher;
+import org.wildfly.channel.maven.ChannelCoordinate;
+import org.wildfly.channel.maven.VersionResolverFactory;
 
 public class ChannelMavenArtifactRepositoryManager implements MavenRepoManager {
 
-    private static class WildFlyMavenVersionsResolver implements MavenVersionsResolver {
-
-        private final RepositorySystem system;
-        private final DefaultRepositorySystemSession session;
-        private final DefaultRepositorySystemSession resolutionSession;
-        private final List<RemoteRepository> repositories;
-
-        WildFlyMavenVersionsResolver(RepositorySystem system,
-                                     RepositorySystemSession contextSession,
-                                     List<RemoteRepository> repositories) {
-            this.system = system;
-            session = newRepositorySystemSession(contextSession);
-            resolutionSession = newRepositorySystemSession(contextSession);
-            this.repositories = repositories;
-        }
-
-        @Override
-        public Set<String> getAllVersions(String groupId, String artifactId, String extension, String classifier) {
-            requireNonNull(groupId);
-            requireNonNull(artifactId);
-
-            Artifact artifact = new DefaultArtifact(groupId, artifactId, classifier, extension, "[0,)");
-            VersionRangeRequest versionRangeRequest = new VersionRangeRequest();
-            versionRangeRequest.setArtifact(artifact);
-            if (repositories != null) {
-                versionRangeRequest.setRepositories(repositories);
-            }
-
-            try {
-                VersionRangeResult versionRangeResult = system.resolveVersionRange(session, versionRangeRequest);
-                Set<String> versions = versionRangeResult.getVersions().stream().map(Version::toString).collect(Collectors.toSet());
-                return versions;
-            } catch (VersionRangeResolutionException e) {
-                return emptySet();
-            }
-        }
-
-        @Override
-        public File resolveArtifact(String groupId, String artifactId, String extension, String classifier, String version) throws UnresolvedMavenArtifactException {
-            Artifact artifact = new DefaultArtifact(groupId, artifactId, classifier, extension, version);
-
-            ArtifactRequest request = new ArtifactRequest();
-            request.setArtifact(artifact);
-            if (repositories != null) {
-                request.setRepositories(repositories);
-            }
-
-            ArtifactResult result;
-            try {
-                result = system.resolveArtifact(resolutionSession, request);
-            } catch (ArtifactResolutionException ex) {
-                throw new UnresolvedMavenArtifactException(ex.getLocalizedMessage(), ex);
-            }
-            return result.getArtifact().getFile();
-        }
-
-        public static DefaultRepositorySystemSession newRepositorySystemSession(RepositorySystemSession contextSession) {
-            DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
-            session.setLocalRepositoryManager(contextSession.getLocalRepositoryManager());
-            return session;
-        }
-
-        @Override
-        public void close() {
-        }
-
-    }
-
-    private static class WildFlyMavenVersionResolverFactory implements MavenVersionsResolver.Factory {
-
-        private final RepositorySystemSession contextSession;
-        private List<RemoteRepository> repositories;
-        private final RepositorySystem system;
-        final List<WildFlyMavenVersionsResolver> resolvers = new ArrayList<>();
-
-        WildFlyMavenVersionResolverFactory(RepositorySystem system, RepositorySystemSession contextSession, List<RemoteRepository> repositories) {
-            this.system = system;
-            this.contextSession = contextSession;
-            this.repositories = repositories;
-        }
-
-        @Override
-        public WildFlyMavenVersionsResolver create() {
-
-            WildFlyMavenVersionsResolver res = new WildFlyMavenVersionsResolver(system, contextSession, repositories);
-            resolvers.add(res);
-            return res;
-        }
-    }
-
     private final ChannelSession channelSession;
-    private final WildFlyMavenVersionResolverFactory factory;
 
     public ChannelMavenArtifactRepositoryManager(List<ChannelCoordinate> channelCoords,
                                                  RepositorySystem system, RepositorySystemSession contextSession) throws MalformedURLException, UnresolvedMavenArtifactException {
         this(channelCoords, system, contextSession, null);
     }
+
     public ChannelMavenArtifactRepositoryManager(List<ChannelCoordinate> channelCoords,
                                                  RepositorySystem system,
                                                  RepositorySystemSession contextSession,
                                                  List<RemoteRepository> repositories) throws MalformedURLException, UnresolvedMavenArtifactException {
-        List<Channel> channels = new ArrayList<>();
-        factory = new WildFlyMavenVersionResolverFactory(system, contextSession, repositories);
-        WildFlyMavenVersionsResolver resolver = factory.create();
-        for (ChannelCoordinate channelCoord : channelCoords) {
-            if (channelCoord.getUrl() != null) {
-                Channel channel = ChannelMapper.from(channelCoord.getUrl());
-                channels.add(channel);
-                continue;
-            }
-
-            String version = channelCoord.getVersion();
-            if (version == null) {
-                Set<String> versions = resolver.getAllVersions(channelCoord.getGroupId(), channelCoord.getArtifactId(), channelCoord.getExtension(), channelCoord.getClassifier());
-                Optional<String> latestVersion = VersionMatcher.getLatestVersion(versions);
-                version = latestVersion.orElseThrow(() -> {
-                    throw new RuntimeException(String.format("Unable to resolve the latest version of channel %s:%s", channelCoord.getGroupId(), channelCoord.getArtifactId()));
-                });
-            }
-            File channelArtifact = resolver.resolveArtifact(channelCoord.getGroupId(), channelCoord.getArtifactId(), channelCoord.getExtension(), channelCoord.getClassifier(), version);
-            Channel channel = ChannelMapper.from(channelArtifact.toURI().toURL());
-            channels.add(channel);
-        }
+        DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
+        session.setLocalRepositoryManager(contextSession.getLocalRepositoryManager());
+        VersionResolverFactory factory = new VersionResolverFactory(system, session, repositories);
+        List<Channel> channels = factory.resolveChannels(channelCoords);
         channelSession = new ChannelSession(channels, factory);
     }
 
     @Override
     public void resolve(MavenArtifact artifact) throws MavenUniverseException {
         try {
-            resolveChannel(artifact);
+            resolveFromChannels(artifact);
         } catch (UnresolvedMavenArtifactException ex) {
             // unable to resolve the artifact through the channel.
             // if the version is defined, let's resolve it directly
@@ -207,7 +82,7 @@ public class ChannelMavenArtifactRepositoryManager implements MavenRepoManager {
         }
     }
 
-    private void resolveChannel(MavenArtifact artifact) throws UnresolvedMavenArtifactException {
+    private void resolveFromChannels(MavenArtifact artifact) throws UnresolvedMavenArtifactException {
         org.wildfly.channel.MavenArtifact result = channelSession.resolveMavenArtifact(artifact.getGroupId(), artifact.getArtifactId(), artifact.getExtension(), artifact.getClassifier());
         artifact.setVersion(result.getVersion());
         artifact.setPath(result.getFile().toPath());

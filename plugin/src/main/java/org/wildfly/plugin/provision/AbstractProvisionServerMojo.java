@@ -48,6 +48,7 @@ import org.jboss.galleon.universe.maven.repo.MavenRepoManager;
 import org.jboss.galleon.util.IoUtils;
 import org.jboss.galleon.xml.ProvisioningXmlWriter;
 import org.wildfly.channel.UnresolvedMavenArtifactException;
+import org.wildfly.channel.maven.ChannelCoordinate;
 import org.wildfly.plugin.common.PropertyNames;
 import org.wildfly.plugin.common.Utils;
 import org.wildfly.plugin.core.GalleonUtils;
