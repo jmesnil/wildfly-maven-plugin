@@ -41,7 +41,7 @@ public class ApplicationImageInfo {
      * Determine which WildFly Runtime image to use so that the application runs with the specified JDK.
      * The default is "11". Accepted values are "11", "17".
      */
-    private String jdkVersion = "11";
+    protected String jdkVersion = "11";
 
     /**
      * The group part of the name of the application image.
@@ -56,7 +56,7 @@ public class ApplicationImageInfo {
     /**
      * The tag part of the application image (default is @{code latest}.
      */
-    private String tag = "latest";
+    String tag = "latest";
 
     /**
      * The container registry.
@@ -85,9 +85,8 @@ public class ApplicationImageInfo {
         String registry = this.registry != null ? this.registry + "/"  : "";
         String group = this.group != null ? this.group + "/" : "";
         String imageName = this.name != null ? this.name : artifactId.toLowerCase();
-        String tag = this.tag;
 
-        return registry + group + imageName + ":" + tag;
+        return registry + group + imageName;
     }
 
     String getWildFlyRuntimeImage() {

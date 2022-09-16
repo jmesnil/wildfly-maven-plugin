@@ -175,23 +175,25 @@ public class ApplicationImageMojo extends PackageServerMojo {
                         image.dockerBinary, image.dockerBinary));
             }
 
-            String image = this.image.getApplicationImageName(project.getArtifactId());
+            String fullImageName = this.image.getApplicationImageName(project.getArtifactId()) + ":" + this.image.tag;
 
-            boolean buildSuccess = buildApplicationImage(image, runtimeImage);
+            boolean buildSuccess = buildApplicationImage();
             if (!buildSuccess) {
-                throw new MojoExecutionException(String.format("Unable to build application image %s", image));
+                throw new MojoExecutionException(String.format("Unable to build application image %s", fullImageName));
             }
-            getLog().info(String.format("Successfully built application image %s", image));
+            getLog().info(String.format("Successfully built application image %s", fullImageName));
 
             if (this.image.push) {
                 logToRegistry();
 
-                boolean pushSuccess = pushApplicationImage(image);
+                boolean pushSuccess = pushApplicationImage();
                 if (!pushSuccess) {
-                    throw new MojoExecutionException(String.format("Unable to push application image %s", image));
+                    throw new MojoExecutionException(String.format("Unable to push application image %s", fullImageName));
                 }
-                getLog().info(String.format("Successfully pushed application image %s", image));
+                getLog().info(String.format("Successfully pushed application image %s", fullImageName));
             }
+
+            generateHelmValueFile(Paths.get(project.getBuild().getDirectory()), channelLabels, featurePackLabels, layerLabels);
         } catch (IOException e) {
             MojoExecutionException ex = new MojoExecutionException(e.getLocalizedMessage());
             ex.initCause(e);
@@ -220,19 +222,21 @@ public class ApplicationImageMojo extends PackageServerMojo {
         }
     }
 
-    private boolean buildApplicationImage(String image, String runtimeImage) throws IOException {
-        getLog().info(format("Building application image %s using %s.", image, this.image.dockerBinary));
-        String[] dockerArgs = new String[] {"build", "-t", image, "."};
+    private boolean buildApplicationImage() throws IOException {
+        String imageName = this.image.getApplicationImageName(project.getArtifactId()) + ":" + image.tag;
+        getLog().info(format("Building application image %s using %s.", imageName, this.image.dockerBinary));
+        String[] dockerArgs = new String[] {"build", "-t", imageName, "."};
 
         getLog().info(format("Executing the following command to build application image: '%s %s'", this.image.dockerBinary, join(" ", dockerArgs)));
         return ExecUtil.exec(getLog(), Paths.get(project.getBuild().getDirectory()).toFile(), this.image.dockerBinary, dockerArgs);
 
     }
 
-    private boolean pushApplicationImage(String image) {
-        getLog().info(format("Pushing application image %s using %s.", image, this.image.dockerBinary));
+    private boolean pushApplicationImage() {
+        String imageName = this.image.getApplicationImageName(project.getArtifactId()) + ":" + image.tag;
+        getLog().info(format("Pushing application image %s using %s.", imageName, this.image.dockerBinary));
 
-        String[] dockerArgs = new String[] {"push", image};
+        String[] dockerArgs = new String[] {"push", imageName};
 
         getLog().info(format("Executing the following command to push application image: '%s %s'", this.image.dockerBinary, join(" ", dockerArgs)));
         return ExecUtil.exec(getLog(), Paths.get("target").toFile(), this.image.dockerBinary, dockerArgs);
@@ -244,13 +248,13 @@ public class ApplicationImageMojo extends PackageServerMojo {
                 "COPY --chown=jboss:root " + wildflyDirectory + " $JBOSS_HOME\n" +
                 "RUN chmod -R ug+rwX $JBOSS_HOME\n");
         if (!channelLabels.isEmpty()) {
-            out.append(createLabel("org.wildfly.channels", channelLabels));
+            out.append(createDockerLabel("org.wildfly.channels", channelLabels));
         }
         if (!featurePackLabels.isEmpty()) {
-            out.append(createLabel("org.wildfly.feature-packs", featurePackLabels));
+            out.append(createDockerLabel("org.wildfly.feature-packs", featurePackLabels));
         }
         if (!layerLabels.isEmpty()) {
-            out.append(createLabel("org.wildfly.layers", layerLabels));
+            out.append(createDockerLabel("org.wildfly.layers", layerLabels));
         }
 
         Files.writeString(targetDir.resolve("Dockerfile"),
@@ -258,7 +262,7 @@ public class ApplicationImageMojo extends PackageServerMojo {
                 StandardCharsets.UTF_8);
     }
 
-    private String createLabel(String key, String value) {
+    private String createDockerLabel(String key, String value) {
         return String.format("LABEL \"%s\"=\"%s\"\n", key, value);
     }
 
@@ -275,6 +279,37 @@ public class ApplicationImageMojo extends PackageServerMojo {
         }
 
         return true;
+    }
+
+    private void generateHelmValueFile(Path targetDir, String channelLabels, String featurePackLabels, String layerLabels) throws IOException {
+        StringBuilder out = new StringBuilder();
+        out.append("image:\n" +
+                "  name: " + image.getApplicationImageName(project.getArtifactId()) + "\n");
+        if (image.tag != null && !"latest".equals(image.tag)) {
+            out.append("  tag: " + image.tag + "\n");
+        }
+        out.append("build:\n" +
+                "  enabled: false\n" +
+                "deploy:\n" +
+                "  route:\n" +
+                "    enabled: false\n");
+        out.append("  annotations:\n");
+        out.append("    org.jboss.product.openjdk.version: \"" + image.jdkVersion + "\"\n");
+        if (!channelLabels.isEmpty() || !featurePackLabels.isEmpty() || !layerLabels.isEmpty()) {
+            if (!channelLabels.isEmpty()) {
+                out.append("    org.wildfly.channels: " + channelLabels +"\n");
+            }
+            if (!featurePackLabels.isEmpty()) {
+                out.append("    org.wildfly.feature-packs: " + featurePackLabels +"\n");
+            }
+            if (!layerLabels.isEmpty()) {
+                out.append("    org.wildfly.layers: " + layerLabels +"\n");
+            }
+        }
+
+        Files.writeString(targetDir.resolve("helm.yaml"),
+                out.toString(),
+                StandardCharsets.UTF_8);
     }
 
 }
