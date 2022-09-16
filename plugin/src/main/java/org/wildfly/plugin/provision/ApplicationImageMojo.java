@@ -31,6 +31,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.stream.Collectors;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -123,8 +124,48 @@ public class ApplicationImageMojo extends PackageServerMojo {
             getLog().info(format("Generating Dockerfile %s from base image %s",
                     Paths.get(project.getBuild().getDirectory()).resolve("Dockerfile"),
                     runtimeImage));
-            generateDockerfile(runtimeImage, Paths.get(project.getBuild().getDirectory()), provisioningDir);
 
+            String featurePackLabels = "";
+            if (featurePacks != null && !featurePacks.isEmpty()) {
+                featurePackLabels = featurePacks.stream().map(fp -> {
+                    if (fp.getLocation() != null) {
+                        return fp.getLocation();
+                    } else {
+                        String location = fp.getGroupId() + ":" + fp.getArtifactId();
+                        if (fp.getVersion() != null) {
+                            location += ":" + fp.getVersion();
+                        }
+                        return location;
+                    }
+                }).collect(Collectors.joining(","));
+            }
+
+            String channelLabels = "";
+            if (channels != null && !channels.isEmpty()) {
+                channelLabels = channels.stream().map(c -> {
+                    if (c.getUrl() != null) {
+                        return c.getUrl().toString();
+                    } else {
+                        String location = c.getGroupId() + ":" + c.getArtifactId();
+                        if (c.getVersion() != null) {
+                            location += ":" + c.getVersion();
+                        }
+                        return location;
+                    }
+                }).collect(Collectors.joining(","));
+            }
+
+            String layerLabels = "";
+            if (layers != null && !layers.isEmpty()) {
+                layerLabels = String.join(",", layers);
+            }
+
+            generateDockerfile(runtimeImage,
+                    Paths.get(project.getBuild().getDirectory()),
+                    provisioningDir,
+                    channelLabels,
+                    featurePackLabels,
+                    layerLabels);
             if (!image.build) {
                 return;
             }
@@ -197,12 +238,28 @@ public class ApplicationImageMojo extends PackageServerMojo {
         return ExecUtil.exec(getLog(), Paths.get("target").toFile(), this.image.dockerBinary, dockerArgs);
     }
 
-    private void generateDockerfile(String runtimeImage, Path targetDir, String wildflyDirectory) throws IOException {
+    private void generateDockerfile(String runtimeImage, Path targetDir, String wildflyDirectory, String channelLabels, String featurePackLabels, String layerLabels) throws IOException {
+        StringBuilder out = new StringBuilder();
+        out.append("FROM " + runtimeImage + "\n" +
+                "COPY --chown=jboss:root " + wildflyDirectory + " $JBOSS_HOME\n" +
+                "RUN chmod -R ug+rwX $JBOSS_HOME\n");
+        if (!channelLabels.isEmpty()) {
+            out.append(createLabel("org.wildfly.channels", channelLabels));
+        }
+        if (!featurePackLabels.isEmpty()) {
+            out.append(createLabel("org.wildfly.feature-packs", featurePackLabels));
+        }
+        if (!layerLabels.isEmpty()) {
+            out.append(createLabel("org.wildfly.layers", layerLabels));
+        }
+
         Files.writeString(targetDir.resolve("Dockerfile"),
-                "FROM " + runtimeImage + "\n" +
-                        "COPY --chown=jboss:root " + wildflyDirectory + " $JBOSS_HOME\n" +
-                        "RUN chmod -R ug+rwX $JBOSS_HOME",
+                out.toString(),
                 StandardCharsets.UTF_8);
+    }
+
+    private String createLabel(String key, String value) {
+        return String.format("LABEL \"%s\"=\"%s\"\n", key, value);
     }
 
     private boolean isDockerBinaryAvailable(String dockerBinary) {
