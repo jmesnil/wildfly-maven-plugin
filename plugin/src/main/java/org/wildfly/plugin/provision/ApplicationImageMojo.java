@@ -38,6 +38,7 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
+import org.wildfly.plugin.deployment.PackageType;
 
 /**
  * Build (and push) an application image containing the provisioned server and the deployment.
@@ -108,8 +109,11 @@ public class ApplicationImageMojo extends PackageServerMojo {
         return "image";
     }
 
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
+        this.skipDeployment = true;
+
         super.execute();
 
         if (image == null) {
@@ -199,7 +203,8 @@ public class ApplicationImageMojo extends PackageServerMojo {
         Files.writeString(targetDir.resolve("Dockerfile"),
                 "FROM " + runtimeImage + "\n" +
                         "COPY --chown=jboss:root " + wildflyDirectory + " $JBOSS_HOME\n" +
-                        "RUN chmod -R ug+rwX $JBOSS_HOME",
+                        "RUN chmod -R ug+rwX $JBOSS_HOME\n" +
+                        "COPY --chown=jboss:root " + getDeploymentFileName() + " $JBOSS_HOME/standalone/deployments/",
                 StandardCharsets.UTF_8);
     }
 
@@ -216,6 +221,17 @@ public class ApplicationImageMojo extends PackageServerMojo {
         }
 
         return true;
+    }
+
+    private String getDeploymentFileName() {
+        final PackageType packageType = PackageType.resolve(project);
+        final String filename;
+        if (this.filename == null) {
+            filename = String.format("%s.%s", project.getBuild().getFinalName(), packageType.getFileExtension());
+        } else {
+            filename = this.filename;
+        }
+        return filename;
     }
 
 }

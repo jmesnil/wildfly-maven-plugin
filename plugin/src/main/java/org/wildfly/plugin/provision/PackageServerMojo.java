@@ -103,7 +103,7 @@ public class PackageServerMojo extends AbstractProvisionServerMojo {
      * </p>
      */
     @Parameter(property = PropertyNames.DEPLOYMENT_FILENAME)
-    private String filename;
+    protected String filename;
 
     /**
      * The name of the server configuration to use when deploying the
