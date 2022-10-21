@@ -28,6 +28,7 @@ import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.repository.RepositoryPolicy;
 import org.jboss.galleon.universe.maven.MavenArtifact;
 import org.jboss.galleon.universe.maven.MavenUniverseException;
 import org.jboss.galleon.universe.maven.repo.MavenRepoManager;
@@ -55,6 +56,7 @@ public class ChannelMavenArtifactRepositoryManager implements MavenRepoManager, 
                                                  RepositorySystemSession contextSession,
                                                  List<RemoteRepository> repositories) throws MalformedURLException, UnresolvedMavenArtifactException {
         DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
+        session.setUpdatePolicy(RepositoryPolicy.UPDATE_POLICY_ALWAYS);
         session.setLocalRepositoryManager(contextSession.getLocalRepositoryManager());
         VersionResolverFactory factory = new VersionResolverFactory(system, session, repositories);
         resolver = factory.create();

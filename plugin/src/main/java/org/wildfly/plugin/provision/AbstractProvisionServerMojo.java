@@ -16,6 +16,9 @@
  */
 package org.wildfly.plugin.provision;
 
+import static org.wildfly.plugin.core.Constants.PLUGIN_PROVISIONING_FILE;
+import static org.wildfly.plugin.core.Constants.STANDALONE_XML;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -26,7 +29,10 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+
 import javax.xml.stream.XMLStreamException;
+
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -51,10 +57,8 @@ import org.wildfly.channel.UnresolvedMavenArtifactException;
 import org.wildfly.channel.maven.ChannelCoordinate;
 import org.wildfly.plugin.common.PropertyNames;
 import org.wildfly.plugin.common.Utils;
-import org.wildfly.plugin.core.GalleonUtils;
-import static org.wildfly.plugin.core.Constants.PLUGIN_PROVISIONING_FILE;
-import static org.wildfly.plugin.core.Constants.STANDALONE_XML;
 import org.wildfly.plugin.core.FeaturePack;
+import org.wildfly.plugin.core.GalleonUtils;
 import org.wildfly.plugin.core.MavenRepositoriesEnricher;
 
 
@@ -146,7 +150,10 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
     @Parameter(required = false, alias= "feature-packs", property = PropertyNames.WILDFLY_PROVISIONING_FEATURE_PACKS)
     List<FeaturePack> featurePacks = Collections.emptyList();
 
-/**
+    @Parameter(required = false, alias= "repository-ids", property = "wildfly.provisioning.repository-ids")
+    List<String> repositoryIDs = Collections.emptyList();
+
+    /**
      * A list of Galleon layers to provision. Can be used when
      * feature-pack-location or feature-packs are set.
      * Use the System property {@code wildfly.provisioning.layers} to provide a comma separated list of layers.
@@ -198,13 +205,23 @@ abstract class AbstractProvisionServerMojo extends AbstractMojo {
             return;
         }
         enrichRepositories();
+
+        // if repositoryIDs is set, we only used the repositories from this allowlist
+        List<RemoteRepository> repos = this.repositories;
+        if (!repositoryIDs.isEmpty()) {
+            // FIXME if the repositoryIDs does not correspond to know repository ID, we should fail
+            repos = repositories.stream()
+                    .filter(r -> repositoryIDs.contains(r.getId()))
+                    .collect(Collectors.toList());
+            getLog().info(String.format("Provisioning server from Maven repositories: %s", repos));
+        }
         if (channels == null) {
             artifactResolver = offlineProvisioning ? new MavenArtifactRepositoryManager(repoSystem, repoSession)
-                    : new MavenArtifactRepositoryManager(repoSystem, repoSession, repositories);
+                    : new MavenArtifactRepositoryManager(repoSystem, repoSession, repos);
         } else {
             try {
                 artifactResolver = offlineProvisioning ? new ChannelMavenArtifactRepositoryManager(channels, repoSystem, repoSession)
-                        : new ChannelMavenArtifactRepositoryManager(channels, repoSystem, repoSession, repositories);
+                        : new ChannelMavenArtifactRepositoryManager(channels, repoSystem, repoSession, repos);
             } catch (MalformedURLException | UnresolvedMavenArtifactException ex) {
                 throw new MojoExecutionException(ex.getLocalizedMessage(), ex);
             }
